@@ -85,6 +85,8 @@ async def upload_financial_document(
         total_pages=total_pages,
         status="uploaded",
         uploaded_by_id=current_user.id,
+        organization_id=current_user.organization_id,
+        is_org_shared=False,
         data_retention_until=retention_until
     )
     db.add(new_doc)
@@ -119,6 +121,7 @@ async def upload_financial_document(
         status=new_doc.status,
         uploaded_at=new_doc.uploaded_at,
         uploaded_by=current_user.email,
+        is_org_shared=new_doc.is_org_shared,
         blockchain_seal=blockchain_seal
     )
 
@@ -129,18 +132,34 @@ def list_documents(
     db: Session = Depends(get_db)
 ):
     if current_user.role == "admin":
-        docs = db.query(Document).order_by(Document.uploaded_at.desc()).all()
+        if current_user.organization_id:
+            docs = db.query(Document).filter(
+                (Document.organization_id == current_user.organization_id) | (Document.organization_id.is_(None))
+            ).order_by(Document.uploaded_at.desc()).all()
+        else:
+            docs = db.query(Document).order_by(Document.uploaded_at.desc()).all()
     else:
-        # Owned documents + shared documents
+        # Owned documents + individually shared documents + org-wide shared documents
         owned = db.query(Document).filter(Document.uploaded_by_id == current_user.id).all()
+        
         shared_ids = [
             access.document_id 
             for access in db.query(DocumentAccess).filter(DocumentAccess.user_id == current_user.id).all()
         ]
         shared = db.query(Document).filter(Document.id.in_(shared_ids)).all() if shared_ids else []
         
+        # Org-wide shared
+        org_shared = []
+        if current_user.organization_id:
+            org_shared = db.query(Document).filter(
+                Document.is_org_shared == True,
+                Document.organization_id == current_user.organization_id
+            ).all()
+        else:
+            org_shared = db.query(Document).filter(Document.is_org_shared == True).all()
+        
         # Combine unique
-        doc_map = {d.id: d for d in owned + shared}
+        doc_map = {d.id: d for d in owned + shared + org_shared}
         docs = sorted(doc_map.values(), key=lambda d: d.uploaded_at, reverse=True)
 
     results = []
@@ -155,7 +174,8 @@ def list_documents(
             fiscal_period=d.fiscal_period,
             status=d.status,
             uploaded_at=d.uploaded_at,
-            uploaded_by=uploader.email if uploader else "unknown"
+            uploaded_by=uploader.email if uploader else "unknown",
+            is_org_shared=bool(d.is_org_shared)
         ))
     return results
 
@@ -169,8 +189,25 @@ def share_document(
     db: Session = Depends(get_db)
 ):
     doc = check_document_access(document_id, current_user, db, required_permission="edit")
-    
-    target_user = db.query(User).filter(User.email == share_req.user_email).first()
+
+    # If sharing with the entire organization:
+    if share_req.share_with_org:
+        doc.is_org_shared = True
+        if not doc.organization_id and current_user.organization_id:
+            doc.organization_id = current_user.organization_id
+        db.commit()
+
+        log_audit_event(
+            db, action="share_org", user=current_user, document_id=document_id, request=request,
+            details={"scope": "entire_org", "permission": "view"}
+        )
+        return {"status": "success", "message": "Document shared with entire organization (Viewer access)"}
+
+    # Otherwise sharing with specific user email:
+    if not share_req.user_email:
+        raise HTTPException(status_code=400, detail="Must provide user_email or set share_with_org to True")
+
+    target_user = db.query(User).filter(User.email == share_req.user_email.strip()).first()
     if not target_user:
         raise HTTPException(status_code=404, detail="Target user with given email not found")
 

@@ -9,6 +9,19 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
+class Organization(Base):
+    __tablename__ = "organizations"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False, default="FinanceCorp Global")
+    domain = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    users = relationship("User", back_populates="organization")
+    documents = relationship("Document", back_populates="organization")
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -18,9 +31,13 @@ class User(Base):
     full_name = Column(String, nullable=False)
     role = Column(String, default="analyst", nullable=False)  # admin, analyst, viewer
     is_active = Column(Boolean, default=True)
+    provider = Column(String, default="local", nullable=False)  # local, google
+    organization_id = Column(String, ForeignKey("organizations.id"), nullable=True)
+    last_active = Column(DateTime, default=datetime.utcnow)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
+    organization = relationship("Organization", back_populates="users")
     documents = relationship("Document", back_populates="uploader", foreign_keys="Document.uploaded_by_id")
     shared_access = relationship("DocumentAccess", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
@@ -40,10 +57,13 @@ class Document(Base):
     status = Column(String, default="pending")  # pending, processing, completed, failed
     error_message = Column(Text, nullable=True)
     uploaded_by_id = Column(String, ForeignKey("users.id"), nullable=False)
+    organization_id = Column(String, ForeignKey("organizations.id"), nullable=True)
+    is_org_shared = Column(Boolean, default=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     data_retention_until = Column(DateTime, nullable=True)
 
     # Relationships
+    organization = relationship("Organization", back_populates="documents")
     uploader = relationship("User", back_populates="documents", foreign_keys=[uploaded_by_id])
     access_grants = relationship("DocumentAccess", back_populates="document", cascade="all, delete-orphan")
     analysis = relationship("AnalysisRecord", back_populates="document", uselist=False, cascade="all, delete-orphan")

@@ -67,6 +67,18 @@ class ApiService {
     return this.request('/auth/me');
   }
 
+  async googleLogin(email = 'google.analyst@finance.corp', name = 'Google Workspace Analyst', role = 'analyst') {
+    const res = await this.request('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ email, name, role })
+    });
+
+    if (res.access_token) {
+      this.setToken(res.access_token);
+    }
+    return res;
+  }
+
   // Documents
   async uploadDocument(file) {
     const formData = new FormData();
@@ -82,10 +94,14 @@ class ApiService {
     return this.request('/documents');
   }
 
-  async shareDocument(docId, userEmail, permission = 'view') {
+  async shareDocument(docId, userEmail = null, permission = 'view', shareWithOrg = false) {
     return this.request(`/documents/${docId}/share`, {
       method: 'POST',
-      body: JSON.stringify({ user_email: userEmail, permission })
+      body: JSON.stringify({
+        user_email: userEmail,
+        permission,
+        share_with_org: shareWithOrg
+      })
     });
   }
 
@@ -118,14 +134,26 @@ class ApiService {
     return this.request('/admin/users');
   }
 
+  async inviteUser(email, role = 'analyst', fullName = null) {
+    return this.request('/admin/invite', {
+      method: 'POST',
+      body: JSON.stringify({ email, role, full_name: fullName })
+    });
+  }
+
   async updateUserRole(userId, newRole) {
     return this.request(`/admin/users/${userId}/role?new_role=${newRole}`, {
       method: 'PUT'
     });
   }
 
-  async getAuditLogs(limit = 50) {
-    return this.request(`/admin/audit-logs?limit=${limit}`);
+  async getAuditLogs({ limit = 100, action = '', userEmail = '', documentId = '' } = {}) {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit);
+    if (action) params.append('action', action);
+    if (userEmail) params.append('user_email', userEmail);
+    if (documentId) params.append('document_id', documentId);
+    return this.request(`/admin/audit-logs?${params.toString()}`);
   }
 }
 

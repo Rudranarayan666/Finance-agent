@@ -19,7 +19,8 @@ import {
   BrainCircuit,
   HelpCircle,
   MessageSquare,
-  BarChart3
+  BarChart3,
+  Shield
 } from 'lucide-react';
 import Navbar from './components/Navbar';
 import LandingHero from './components/LandingHero';
@@ -30,15 +31,13 @@ import ExplainableAiShap from './components/ExplainableAiShap';
 import Visualizations from './components/Visualizations';
 import RagChat from './components/RagChat';
 import AdminPanel from './components/AdminPanel';
-import LoginModal from './components/LoginModal';
-import FinanceBackground3D from './components/FinanceBackground3D';
+import LoginPage from './components/LoginPage';
 import CitationModal from './components/CitationModal';
 import { api } from './services/api';
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('visualizations'); // 'visualizations', 'chat', 'history', 'admin'
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showHero, setShowHero] = useState(true);
   
   // Documents & Active Analysis
@@ -57,6 +56,7 @@ export default function App() {
   // Share modal state
   const [shareDocId, setShareDocId] = useState(null);
   const [shareEmail, setShareEmail] = useState('');
+  const [shareWithEntireOrg, setShareWithEntireOrg] = useState(false);
 
   // 1. Initial Load: Check token & get current user
   useEffect(() => {
@@ -70,19 +70,29 @@ export default function App() {
           api.setToken(null);
           setUser(null);
         }
-      } else {
-        // Auto-login with seeded analyst account for instant preview
-        try {
-          const res = await api.login('analyst@finance.corp', 'AnalystPass123!');
-          setUser(res.user);
-          await loadDocuments();
-        } catch (e) {
-          setIsAuthModalOpen(true);
-        }
       }
     };
     initAuth();
   }, []);
+
+  const handleLoginSuccess = (loggedInUser) => {
+    setUser(loggedInUser);
+    loadDocuments();
+
+    // Enterprise Role-Based Redirection:
+    // Admin -> Admin Panel, Analyst -> Upload Screen, Viewer -> Shared Documents List
+    if (loggedInUser.role === 'admin') {
+      setActiveTab('admin');
+    } else if (loggedInUser.role === 'viewer') {
+      setActiveTab('history');
+    } else {
+      setActiveTab('visualizations');
+      setTimeout(() => {
+        const el = document.getElementById('upload-section');
+        el?.scrollIntoView({ behavior: 'smooth' });
+      }, 300);
+    }
+  };
 
   const loadDocuments = async () => {
     try {
@@ -200,12 +210,20 @@ export default function App() {
 
   const handleShareSubmit = async (e) => {
     e.preventDefault();
-    if (!shareEmail.trim() || !shareDocId) return;
+    if (!shareDocId) return;
     try {
-      await api.shareDocument(shareDocId, shareEmail.trim(), 'view');
-      alert(`Document shared successfully with ${shareEmail}`);
+      if (shareWithEntireOrg) {
+        await api.shareDocument(shareDocId, null, 'view', true);
+        alert('Document shared with entire organization (Viewer access)!');
+      } else {
+        if (!shareEmail.trim()) return;
+        await api.shareDocument(shareDocId, shareEmail.trim(), 'view', false);
+        alert(`Document shared successfully with ${shareEmail.trim()}`);
+      }
       setShareDocId(null);
       setShareEmail('');
+      setShareWithEntireOrg(false);
+      loadDocuments();
     } catch (err) {
       alert(err.message || 'Failed to share document');
     }
@@ -214,14 +232,16 @@ export default function App() {
   const handleLogout = () => {
     api.setToken(null);
     setUser(null);
-    setIsAuthModalOpen(true);
+    setActiveTab('visualizations');
   };
+
+  // Enterprise Auth Gate: Display dedicated Login/Sign-In Page if not authenticated
+  if (!user) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="min-h-screen bg-[#070a12] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
-      
-      {/* 3D Animated Three.js Particle Background */}
-      <FinanceBackground3D />
 
       {/* Top Navigation */}
       <Navbar
@@ -229,11 +249,11 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAuth={() => {}}
       />
 
       {/* Main Responsive Container */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8 relative z-10">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8 relative z-10 pb-20 md:pb-8">
         
         {/* Landing Hero Overview (Collapsible on Visualizations View) */}
         {showHero && (activeTab === 'visualizations' || activeTab === 'dashboard') && (
@@ -389,6 +409,7 @@ export default function App() {
             {analysisResult?.metrics && (
               <MetricsGrid 
                 metrics={analysisResult.metrics} 
+                chartData={analysisResult.chart_data}
                 onInspectCitation={(c) => setInspectingCitation(c)}
                 companyName={analysisResult?.document_meta?.company_name}
               />
@@ -580,34 +601,84 @@ export default function App() {
         onClose={() => setInspectingCitation(null)}
       />
 
-      {/* Share Document Modal */}
+      {/* Org-Aware Share Document Modal */}
       {shareDocId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
           <div className="bg-[#0e1424] border border-slate-800 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 text-slate-100">
-            <h3 className="text-base font-bold text-white">Share Financial Analysis</h3>
-            <p className="text-xs text-slate-400">Grant read-only viewer access to another corporate user email.</p>
+            <h3 className="text-base font-bold text-white flex items-center space-x-2">
+              <Share2 className="w-4 h-4 text-emerald-400" />
+              <span>Share Financial Filing</span>
+            </h3>
+            <p className="text-xs text-slate-400">
+              Share this audit-verified report across your organization.
+            </p>
+
             <form onSubmit={handleShareSubmit} className="space-y-3.5">
-              <input
-                type="email"
-                required
-                placeholder="colleague@finance.corp"
-                value={shareEmail}
-                onChange={(e) => setShareEmail(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-              />
-              <div className="flex justify-end space-x-2 pt-1">
+              {/* Share Scope Selector */}
+              <div className="space-y-2 pt-1">
+                <label className="flex items-start space-x-2.5 p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 cursor-pointer hover:border-slate-700 transition">
+                  <input
+                    type="radio"
+                    name="shareScope"
+                    checked={!shareWithEntireOrg}
+                    onChange={() => setShareWithEntireOrg(false)}
+                    className="mt-0.5 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <div>
+                    <div className="text-xs font-semibold text-slate-200">Specific Teammate</div>
+                    <div className="text-[11px] text-slate-500">Grant access to a specific corporate email address</div>
+                  </div>
+                </label>
+
+                <label className="flex items-start space-x-2.5 p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 cursor-pointer hover:border-slate-700 transition">
+                  <input
+                    type="radio"
+                    name="shareScope"
+                    checked={shareWithEntireOrg}
+                    onChange={() => setShareWithEntireOrg(true)}
+                    className="mt-0.5 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <div>
+                    <div className="text-xs font-semibold text-emerald-400 flex items-center space-x-1">
+                      <Building2 className="w-3 h-3" />
+                      <span>Entire Organization</span>
+                    </div>
+                    <div className="text-[11px] text-slate-500">Grant Viewer access to all members in your company</div>
+                  </div>
+                </label>
+              </div>
+
+              {!shareWithEntireOrg && (
+                <div>
+                  <label className="block text-[11px] font-mono text-slate-400 mb-1">Teammate Email</label>
+                  <input
+                    type="email"
+                    required={!shareWithEntireOrg}
+                    placeholder="colleague@finance.corp"
+                    value={shareEmail}
+                    onChange={(e) => setShareEmail(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShareDocId(null)}
+                  onClick={() => {
+                    setShareDocId(null);
+                    setShareEmail('');
+                    setShareWithEntireOrg(false);
+                  }}
                   className="px-4 py-2 text-xs text-slate-400 hover:text-slate-200"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950"
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-950 transition"
                 >
-                  Grant Access
+                  {shareWithEntireOrg ? 'Share with Entire Org' : 'Grant Access'}
                 </button>
               </div>
             </form>
@@ -615,15 +686,58 @@ export default function App() {
         </div>
       )}
 
-      {/* Auth / Login Modal */}
-      <LoginModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        onLoginSuccess={(u) => {
-          setUser(u);
-          loadDocuments();
-        }}
-      />
+      {/* Mobile Bottom Tab Bar (fixed on mobile screens < 768px) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-[#070b16]/95 backdrop-blur-lg border-t border-slate-800 z-40 flex items-center justify-around px-2 shadow-2xl">
+        <button
+          onClick={() => setActiveTab('visualizations')}
+          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+            activeTab === 'visualizations' || activeTab === 'dashboard'
+              ? 'text-emerald-400 font-bold'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span className="text-[10px]">Analytics</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('chat')}
+          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+            activeTab === 'chat'
+              ? 'text-cyan-400 font-bold'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          <span className="text-[10px]">AI Chat</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+            activeTab === 'history'
+              ? 'text-white font-bold'
+              : 'text-slate-400 hover:text-slate-200'
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span className="text-[10px]">Docs</span>
+        </button>
+
+        {user?.role === 'admin' && (
+          <button
+            onClick={() => setActiveTab('admin')}
+            className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+              activeTab === 'admin'
+                ? 'text-purple-400 font-bold'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span className="text-[10px]">Admin</span>
+          </button>
+        )}
+      </div>
 
     </div>
   );

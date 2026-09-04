@@ -12,14 +12,21 @@ import {
   Lock,
   ChevronDown
 } from 'lucide-react';
+import FinanceBackground3D from './FinanceBackground3D';
 
 export default function LandingHero({ onGetStarted, onUploadClick, hasActiveDocument, companyName }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900/90 via-slate-900/60 to-slate-950/80 border border-slate-800 backdrop-blur-md p-6 sm:p-10 shadow-2xl space-y-8">
+    <div className="relative overflow-hidden rounded-3xl bg-gradient-to-b from-slate-900/95 via-slate-900/90 to-slate-950/95 border border-slate-800 backdrop-blur-xl p-6 sm:p-10 shadow-2xl space-y-8">
       
+      {/* 3D Interactive Particle Field pinned strictly inside Hero at low opacity */}
+      <FinanceBackground3D />
+
       {/* Background Decorative Ambient Glows */}
-      <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-24 -left-24 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none z-0" />
+      <div className="absolute -bottom-24 -right-24 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none z-0" />
+
+      {/* Hero Content Panel (elevated with z-10 so particles never intersect text or borders) */}
+      <div className="relative z-10 space-y-8">
 
       {/* Top Banner Tag */}
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -115,6 +122,7 @@ export default function LandingHero({ onGetStarted, onUploadClick, hasActiveDocu
         </div>
       </div>
 
+      </div>
     </div>
   );
 }

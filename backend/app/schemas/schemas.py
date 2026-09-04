@@ -129,6 +129,10 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: UserRole
+    provider: str = "local"
+    organization_id: Optional[str] = None
+    organization_name: Optional[str] = None
+    last_active: Optional[datetime] = None
     created_at: datetime
 
 
@@ -148,12 +152,21 @@ class DocumentSummary(BaseModel):
     status: str
     uploaded_at: datetime
     uploaded_by: str
+    is_org_shared: Optional[bool] = False
+    organization_name: Optional[str] = None
     blockchain_seal: Optional[Dict[str, Any]] = None
 
 
 class DocumentShareRequest(BaseModel):
-    user_email: str
+    user_email: Optional[str] = None
     permission: str = "view"
+    share_with_org: Optional[bool] = False
+
+
+class InviteUserRequest(BaseModel):
+    email: str
+    role: UserRole = UserRole.ANALYST
+    full_name: Optional[str] = None
 
 
 class AskQuestionRequest(BaseModel):

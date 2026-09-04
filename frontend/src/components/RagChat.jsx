@@ -371,37 +371,41 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar with Attachment Paperclip Button */}
-      <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="relative flex items-center pt-2">
-        
-        {/* Attachment Paperclip Button */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isUploadingFile}
-          title="Attach PDF report to chat"
-          className="absolute left-3 p-2 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800/80 transition"
-        >
-          <Paperclip className="w-4 h-4" />
-        </button>
+      {/* Input Bar with Attachment Paperclip Button - Sticky on Mobile */}
+      <form 
+        onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
+        className="pt-2 md:relative fixed bottom-14 md:bottom-auto left-0 right-0 px-3 py-2.5 bg-[#070b16]/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none border-t border-slate-800 md:border-t-0 z-30 flex items-center shadow-2xl md:shadow-none"
+      >
+        <div className="relative w-full max-w-7xl mx-auto flex items-center">
+          {/* Attachment Paperclip Button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploadingFile}
+            title="Attach PDF report to chat"
+            className="absolute left-2.5 p-2 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800/80 transition z-10"
+          >
+            <Paperclip className="w-4 h-4" />
+          </button>
 
-        <input
-          type="text"
-          value={inputQuestion}
-          onChange={(e) => setInputQuestion(e.target.value)}
-          placeholder={`Ask anything about ${companyName || 'this report'} or attach a PDF...`}
-          disabled={isLoading || isUploadingFile}
-          className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-12 pr-12 py-3 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 shadow-inner"
-        />
+          <input
+            type="text"
+            value={inputQuestion}
+            onChange={(e) => setInputQuestion(e.target.value)}
+            placeholder={`Ask anything about ${companyName || 'this report'} or attach a PDF...`}
+            disabled={isLoading || isUploadingFile}
+            className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-12 py-3 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 shadow-inner"
+          />
 
-        {/* Send Button */}
-        <button
-          type="submit"
-          disabled={!inputQuestion.trim() || isLoading || isUploadingFile}
-          className="absolute right-2 p-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 text-white rounded-xl transition shadow-md shadow-emerald-950"
-        >
-          <Send className="w-4 h-4" />
-        </button>
+          {/* Send Button */}
+          <button
+            type="submit"
+            disabled={!inputQuestion.trim() || isLoading || isUploadingFile}
+            className="absolute right-2 p-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 text-white rounded-xl transition shadow-md shadow-emerald-950 z-10"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
       </form>
 
     </div>

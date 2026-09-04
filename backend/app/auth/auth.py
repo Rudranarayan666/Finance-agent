@@ -52,6 +52,14 @@ def check_document_access(document_id: str, current_user: User, db: Session, req
     # Owner has full access
     if doc.uploaded_by_id == current_user.id:
         return doc
+
+    # Org-wide Viewer Access check
+    if doc.is_org_shared:
+        if current_user.organization_id and doc.organization_id:
+            if doc.organization_id == current_user.organization_id and required_permission == "view":
+                return doc
+        elif required_permission == "view":
+            return doc
         
     # Check shared access table
     access = db.query(DocumentAccess).filter(
