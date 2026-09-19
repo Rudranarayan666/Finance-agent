@@ -36,6 +36,8 @@ When equity research analysts, risk officers, or portfolio managers use generic 
 ### 🔑 Core Capabilities
 
 - **100% Verifiable Citations**: Every extracted metric is bound to its exact **page number** and a **verbatim supporting quote** from the document.
+- **Architectural Decision Records ([`decision.md`](decision.md))**: Full ADR log documenting deterministic grounding boundaries, LangGraph supervisor topology, security controls, and design rationale.
+- **Simplified High-Contrast UI & Maximum Readability**: Refined enterprise dark palette (`#0b0f19` canvas, `#111827` cards) with bright white values, clear typography, and accessible visual hierarchy across desktop and mobile.
 - **Dedicated Corporate Authentication & Google OAuth**: Enterprise sign-in portal supporting Google Workspace OAuth (`/api/v1/auth/google`), role presets for evaluation, and role-based redirect.
 - **Enterprise Multi-Tenant RBAC & Governance**: Multi-tenant organization isolation (`FinanceCorp Global`), teammate invitations (`/api/v1/admin/invite`), org-wide document sharing, and filterable audit trails (by action, user email, document ID).
 - **Interactive Recharts SHAP Waterfall**: Replaces static progress bars with an interactive waterfall chart breaking down net performance into positive drivers vs. negative cost headwinds with glassmorphic tooltips.
@@ -125,6 +127,7 @@ flowchart TD
 
 ```text
 Finance-agent/
+├── decision.md                     # Architectural Decision Record (ADR) & Design Decisions
 ├── backend/
 │   ├── app/
 │   │   ├── agents/                 # LangGraph Supervisor & Specialist Agent Nodes
@@ -188,7 +191,7 @@ Finance-agent/
 
 ---
 
-### 1. Backend Setup
+### 1. Backend Setup (FastAPI)
 
 ```bash
 # Navigate to project root
@@ -200,26 +203,29 @@ pip install -r backend/requirements.txt
 # Launch the FastAPI backend server
 uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
 ```
+- **Backend API URL**: `http://127.0.0.1:8000`
 - **Health Check Endpoint**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 - **Interactive OpenAPI Documentation**: [http://127.0.0.1:8000/api/v1/docs](http://127.0.0.1:8000/api/v1/docs)
 
 ---
 
-### 2. Frontend Setup
+### 2. Frontend Setup (React + Vite)
+
+Open a **separate terminal window**:
 
 ```bash
 # Navigate to frontend directory
 cd frontend
 
-# Install packages
+# Install dependencies
 npm install
 
 # Start the Vite development server
 npm run dev
 ```
-Open **[http://localhost:3000](http://localhost:3000)** in your browser.
+Open **[http://localhost:3000](http://localhost:3000)** (or `http://localhost:5173`) in your browser.
 
-To validate the production bundle:
+To validate or build the production bundle:
 ```bash
 npm run build
 ```
