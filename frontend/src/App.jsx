@@ -38,7 +38,7 @@ import { api } from './services/api';
 export default function App() {
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('visualizations'); // 'visualizations', 'chat', 'history', 'admin'
-  const [showHero, setShowHero] = useState(true);
+  const [showHero, setShowHero] = useState(false);
   
   // Documents & Active Analysis
   const [documents, setDocuments] = useState([]);
@@ -311,7 +311,7 @@ export default function App() {
 
             {/* Document Switcher Bar */}
             {documents.length > 1 && (
-              <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
                 <span className="text-xs font-mono text-slate-400 flex-shrink-0 mr-1">
                   Active Filing:
                 </span>
@@ -319,13 +319,13 @@ export default function App() {
                   <button
                     key={doc.id}
                     onClick={() => selectDocument(doc.id)}
-                    className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition flex items-center space-x-2 border flex-shrink-0 ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition flex items-center space-x-2 border flex-shrink-0 ${
                       activeDocument?.id === doc.id
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-md shadow-emerald-950'
-                        : 'bg-slate-900/60 hover:bg-slate-800 text-slate-400 border-slate-800'
+                        ? 'bg-slate-800 text-white border-emerald-500/40 shadow-sm'
+                        : 'bg-slate-900/50 hover:bg-slate-800/60 text-slate-400 border-slate-800'
                     }`}
                   >
-                    <FileText className="w-3.5 h-3.5" />
+                    <FileText className="w-3.5 h-3.5 text-emerald-400" />
                     <span className="truncate max-w-[150px] sm:max-w-[220px]">
                       {doc.company_name || doc.filename}
                     </span>
@@ -339,54 +339,54 @@ export default function App() {
 
             {/* Document Meta Header */}
             {analysisResult?.document_meta ? (
-              <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-3xl p-4 sm:p-7 shadow-2xl relative overflow-hidden">
+              <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-lg relative">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <div className="flex items-center space-x-2.5 flex-wrap gap-y-1.5">
-                      <h1 className="text-lg sm:text-2xl lg:text-3xl font-black text-white tracking-tight">
+                      <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight">
                         {analysisResult.document_meta.company_name}
                       </h1>
-                      <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                      <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
                         {analysisResult.document_meta.fiscal_period}
                       </span>
-                      <span className="px-3 py-1 rounded-full text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                      <span className="px-2.5 py-0.5 rounded-md text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">
                         {analysisResult.document_meta.filing_type}
                       </span>
                     </div>
 
                     <div className="flex items-center space-x-2 sm:space-x-3 text-[11px] sm:text-xs text-slate-400 font-mono flex-wrap">
-                      <span>Total Pages: <strong className="text-slate-200">{analysisResult.document_meta.total_pages}</strong></span>
+                      <span>Pages: <strong className="text-slate-200">{analysisResult.document_meta.total_pages}</strong></span>
                       <span>•</span>
-                      <span>Access Role: <strong className="text-emerald-400">{analysisResult.document_meta.access_level}</strong></span>
+                      <span>Role: <strong className="text-emerald-400">{analysisResult.document_meta.access_level}</strong></span>
                       <span>•</span>
-                      <span>Execution Latency: <strong className="text-slate-200">{analysisResult.processing_meta?.total_latency_ms || 0}ms</strong></span>
+                      <span>Latency: <strong className="text-slate-200">{analysisResult.processing_meta?.total_latency_ms || 0}ms</strong></span>
                     </div>
                   </div>
 
-                  {/* Trust Score Badge & Quick Chat Jump */}
-                  <div className="flex items-center space-x-3 self-start md:self-auto">
-                    <div className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-slate-950/80 border border-slate-800 text-right shadow-inner">
-                      <div className="text-[10px] uppercase font-mono text-slate-400">Grounding Coverage</div>
-                      <div className="text-lg sm:text-2xl font-black text-emerald-400">
+                  {/* Trust Score Badge & Actions */}
+                  <div className="flex items-center space-x-2.5 self-start md:self-auto">
+                    <div className="px-3 py-1.5 rounded-xl bg-slate-950/70 border border-slate-800 text-right">
+                      <div className="text-[10px] uppercase font-mono text-slate-400">Grounding</div>
+                      <div className="text-sm sm:text-base font-bold text-emerald-400">
                         {analysisResult.coverage_report?.fields_found || 0}/8 Verified
                       </div>
                     </div>
 
                     <button
                       onClick={() => setActiveTab('chat')}
-                      className="px-3.5 py-3 bg-cyan-600/20 hover:bg-cyan-600/30 text-cyan-300 border border-cyan-500/40 rounded-2xl text-xs font-bold transition flex items-center space-x-1.5 shadow-lg"
+                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm"
                       title="Open Document Chat"
                     >
-                      <MessageSquare className="w-4 h-4" />
-                      <span className="hidden sm:inline">Ask AI</span>
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Ask AI</span>
                     </button>
 
                     <button
                       onClick={() => setShareDocId(activeDocument?.id)}
-                      className="p-3 bg-slate-800/80 hover:bg-slate-700 text-slate-200 rounded-2xl border border-slate-700 transition shadow-lg"
+                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition"
                       title="Share Analysis"
                     >
-                      <Share2 className="w-4 sm:w-5 h-4 sm:h-5" />
+                      <Share2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -687,12 +687,12 @@ export default function App() {
       )}
 
       {/* Mobile Bottom Tab Bar (fixed on mobile screens < 768px) */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-[#070b16]/95 backdrop-blur-lg border-t border-slate-800 z-40 flex items-center justify-around px-2 shadow-2xl">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-[#090d16]/95 backdrop-blur-lg border-t border-slate-800 z-40 flex items-center justify-around px-2 shadow-xl">
         <button
           onClick={() => setActiveTab('visualizations')}
-          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-lg transition ${
             activeTab === 'visualizations' || activeTab === 'dashboard'
-              ? 'text-emerald-400 font-bold'
+              ? 'text-emerald-400 font-semibold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -702,9 +702,9 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('chat')}
-          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-lg transition ${
             activeTab === 'chat'
-              ? 'text-cyan-400 font-bold'
+              ? 'text-emerald-400 font-semibold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -714,9 +714,9 @@ export default function App() {
 
         <button
           onClick={() => setActiveTab('history')}
-          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+          className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-lg transition ${
             activeTab === 'history'
-              ? 'text-white font-bold'
+              ? 'text-emerald-400 font-semibold'
               : 'text-slate-400 hover:text-slate-200'
           }`}
         >
@@ -727,9 +727,9 @@ export default function App() {
         {user?.role === 'admin' && (
           <button
             onClick={() => setActiveTab('admin')}
-            className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-xl transition ${
+            className={`flex flex-col items-center justify-center space-y-0.5 py-1 px-3 rounded-lg transition ${
               activeTab === 'admin'
-                ? 'text-purple-400 font-bold'
+                ? 'text-emerald-400 font-semibold'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
