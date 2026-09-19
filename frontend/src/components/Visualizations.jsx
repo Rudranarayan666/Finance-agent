@@ -50,12 +50,12 @@ export default function Visualizations({ chartData, coverageReport }) {
   }));
 
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 sm:p-7 space-y-6">
+    <div className="bg-[#111827] border border-slate-700/80 rounded-2xl p-5 sm:p-7 space-y-6 shadow-md">
       
       {/* Visualizations Header & Tab Navigation */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center space-x-2">
+          <h2 className="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
             <span>Visual Analysis Suite</span>
           </h2>
           <p className="text-xs text-slate-400">
@@ -64,13 +64,13 @@ export default function Visualizations({ chartData, coverageReport }) {
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-xl border border-slate-800 overflow-x-auto">
+        <div className="flex items-center space-x-1.5 bg-[#0e1422] p-1 rounded-xl border border-slate-700/80 overflow-x-auto">
           <button
             onClick={() => setActiveVizTab('quarterly')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1 whitespace-nowrap ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 whitespace-nowrap ${
               activeVizTab === 'quarterly'
-                ? 'bg-emerald-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
@@ -79,10 +79,10 @@ export default function Visualizations({ chartData, coverageReport }) {
 
           <button
             onClick={() => setActiveVizTab('margin')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1 whitespace-nowrap ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 whitespace-nowrap ${
               activeVizTab === 'margin'
-                ? 'bg-emerald-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <TrendingUp className="w-3.5 h-3.5" />
@@ -91,26 +91,26 @@ export default function Visualizations({ chartData, coverageReport }) {
 
           <button
             onClick={() => setActiveVizTab('coverage')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1 whitespace-nowrap ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 whitespace-nowrap ${
               activeVizTab === 'coverage'
-                ? 'bg-emerald-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <PieIcon className="w-3.5 h-3.5" />
-            <span>Coverage</span>
+            <span>Metric Coverage</span>
           </button>
 
           <button
             onClick={() => setActiveVizTab('density')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1 whitespace-nowrap ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5 whitespace-nowrap ${
               activeVizTab === 'density'
-                ? 'bg-emerald-600 text-white'
-                : 'text-slate-400 hover:text-slate-200'
+                ? 'bg-emerald-600 text-white shadow-sm'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
             }`}
           >
             <MapPin className="w-3.5 h-3.5" />
-            <span>Citation Map</span>
+            <span>Citation Density</span>
           </button>
         </div>
       </div>
@@ -120,97 +120,129 @@ export default function Visualizations({ chartData, coverageReport }) {
         
         {/* 1. 4-Quarter Comparison Grouped Bar Chart */}
         {activeVizTab === 'quarterly' && (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={quarterlyComparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="quarter" stroke="#94a3b8" fontSize={12} tickLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#090d16', borderColor: '#1f2937', borderRadius: '8px', fontSize: '12px' }}
-                cursor={{ fill: 'rgba(255, 255, 255, 0.03)' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-              <Bar dataKey="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} name="Revenue ($M)" />
-              <Bar dataKey="NetIncome" fill="#38bdf8" radius={[4, 4, 0, 0]} name="Net Income ($M)" />
-              <Bar dataKey="OperatingCashFlow" fill="#818cf8" radius={[4, 4, 0, 0]} name="Op. Cash Flow ($M)" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-300">
+              <span>Quarterly Trends (Revenue, Net Income, OCF)</span>
+              <span className="text-emerald-400">4-Quarter Trajectory</span>
+            </div>
+            <div className="w-full h-80 bg-[#0e1422] border border-slate-700/80 rounded-2xl p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={quarterlyComparisonData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis dataKey="quarter" stroke="#cbd5e1" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#cbd5e1" fontSize={11} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '12px' }} 
+                    itemStyle={{ color: '#f1f5f9' }}
+                  />
+                  <Legend wrapperStyle={{ fontSize: '12px', color: '#cbd5e1' }} />
+                  <Bar dataKey="Revenue" fill="#10b981" radius={[4, 4, 0, 0]} name="Revenue" />
+                  <Bar dataKey="NetIncome" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Net Income" />
+                  <Bar dataKey="OperatingCashFlow" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Operating Cash Flow" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
 
         {/* 2. Gross Margin Trendline Chart */}
         {activeVizTab === 'margin' && (
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={marginTrendData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="quarter" stroke="#94a3b8" fontSize={12} tickLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} unit="%" domain={['auto', 'auto']} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#090d16', borderColor: '#1f2937', borderRadius: '8px', fontSize: '12px' }}
-              />
-              <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-              <Line 
-                type="monotone" 
-                dataKey="GrossMarginPct" 
-                stroke="#10b981" 
-                strokeWidth={3} 
-                dot={{ r: 5, fill: '#10b981' }} 
-                activeDot={{ r: 7 }}
-                name="Gross Margin %" 
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-300">
+              <span>Gross Margin Progression (%)</span>
+              <span className="text-teal-400">Profitability %</span>
+            </div>
+            <div className="w-full h-80 bg-[#0e1422] border border-slate-700/80 rounded-2xl p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={marginTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis dataKey="quarter" stroke="#cbd5e1" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#cbd5e1" fontSize={11} tickLine={false} domain={['auto', 'auto']} unit="%" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '12px' }} 
+                    itemStyle={{ color: '#f1f5f9' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="GrossMarginPct" 
+                    stroke="#14b8a6" 
+                    strokeWidth={3} 
+                    dot={{ r: 5, fill: '#14b8a6' }} 
+                    activeDot={{ r: 8 }} 
+                    name="Gross Margin %"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
 
         {/* 3. Coverage & Confidence Breakdown Radial/Pie */}
         {activeVizTab === 'coverage' && (
-          <div className="h-full flex flex-col sm:flex-row items-center justify-around">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={coverageData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={5}
-                  dataKey="value"
-                >
-                  {coverageData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} stroke="#090d16" strokeWidth={2} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ backgroundColor: '#090d16', borderColor: '#1f2937', borderRadius: '8px', fontSize: '12px' }}
-                />
-                <Legend wrapperStyle={{ fontSize: '12px' }} />
-              </PieChart>
-            </ResponsiveContainer>
-            
-            <div className="text-center sm:text-left space-y-1 p-4 bg-slate-950/60 rounded-xl border border-slate-800">
-              <div className="text-xs text-slate-400 font-mono">Overall Confidence Score</div>
-              <div className="text-2xl font-extrabold text-emerald-400">
-                {((coverageReport?.overall_extraction_confidence || 0.9) * 100).toFixed(0)}%
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-300">
+              <span>Grounding Verification & Disclosures</span>
+              <span className="text-emerald-400">Coverage Breakdown</span>
+            </div>
+            <div className="w-full h-80 bg-[#0e1422] border border-slate-700/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-around gap-4">
+              <div className="w-full sm:w-2/3 h-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={coverageData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {coverageData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} stroke="#0e1422" strokeWidth={2} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#090d16', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '12px' }}
+                    />
+                    <Legend wrapperStyle={{ fontSize: '12px', color: '#cbd5e1' }} />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-              <div className="text-[11px] text-slate-400">
-                {coverageReport?.fields_found || 6} of 8 Target Metrics Verified
+              
+              <div className="w-full sm:w-1/3 text-center sm:text-left space-y-1.5 p-4 bg-[#111827] rounded-xl border border-slate-700/80 shadow-sm">
+                <div className="text-xs text-slate-300 font-mono">Overall Confidence Score</div>
+                <div className="text-3xl font-black text-emerald-400">
+                  {((coverageReport?.overall_extraction_confidence || 0.9) * 100).toFixed(0)}%
+                </div>
+                <div className="text-xs text-slate-300">
+                  {coverageReport?.fields_found || 6} of 8 Target Metrics Verified
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* 4. Citation Page Density Heatmap */}
+        {/* 4. Document Page Citation Heatmap/Density */}
         {activeVizTab === 'density' && (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={pageDensityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis dataKey="page" stroke="#94a3b8" fontSize={12} tickLine={false} />
-              <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} allowDecimals={false} />
-              <Tooltip 
-                contentStyle={{ backgroundColor: '#090d16', borderColor: '#1f2937', borderRadius: '8px', fontSize: '12px' }}
-              />
-              <Bar dataKey="citations" fill="#14b8a6" radius={[4, 4, 0, 0]} name="Citations from Page" />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-300">
+              <span>Source Citation Distribution Across Pages</span>
+              <span className="text-cyan-400">PyMuPDF Verification</span>
+            </div>
+            <div className="w-full h-80 bg-[#0e1422] border border-slate-700/80 rounded-2xl p-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={pageDensityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                  <XAxis dataKey="page" stroke="#cbd5e1" fontSize={11} tickLine={false} />
+                  <YAxis stroke="#cbd5e1" fontSize={11} tickLine={false} allowDecimals={false} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#090d16', borderColor: '#334155', borderRadius: '0.75rem', fontSize: '12px' }}
+                  />
+                  <Bar dataKey="citations" fill="#06b6d4" radius={[4, 4, 0, 0]} name="Citations from Page" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         )}
 
       </div>

@@ -206,34 +206,34 @@ export default function AdminPanel() {
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-800">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
+          <div className="overflow-x-auto rounded-2xl border border-slate-700/80">
+            <table className="w-full text-left text-xs text-slate-200">
+              <thead className="bg-[#0e1422] text-slate-300 uppercase font-mono text-xs border-b border-slate-700">
                 <tr>
-                  <th className="py-3 px-4">Member Name</th>
-                  <th className="py-3 px-4">Corporate Email</th>
-                  <th className="py-3 px-4">Role Assignment</th>
-                  <th className="py-3 px-4">Provider</th>
-                  <th className="py-3 px-4">Last Active</th>
+                  <th className="py-3.5 px-4 font-semibold">Member Name</th>
+                  <th className="py-3.5 px-4 font-semibold">Corporate Email</th>
+                  <th className="py-3.5 px-4 font-semibold">Role Assignment</th>
+                  <th className="py-3.5 px-4 font-semibold">Provider</th>
+                  <th className="py-3.5 px-4 font-semibold">Last Active</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/80">
+              <tbody className="divide-y divide-slate-800 bg-[#111827]">
                 {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-800/30 transition">
-                    <td className="py-3.5 px-4 font-semibold text-slate-200">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] text-purple-400 font-bold border border-slate-700">
+                  <tr key={u.id} className="hover:bg-slate-800/50 transition">
+                    <td className="py-3.5 px-4 font-semibold text-white">
+                      <div className="flex items-center space-x-2.5">
+                        <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-xs text-purple-400 font-bold border border-slate-700">
                           {u.full_name?.slice(0, 2).toUpperCase() || 'U'}
                         </div>
                         <span>{u.full_name}</span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-400">{u.email}</td>
+                    <td className="py-3.5 px-4 font-mono text-slate-300">{u.email}</td>
                     <td className="py-3.5 px-4">
                       <select
                         value={u.role}
                         onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                        className="bg-slate-950 border border-slate-700 text-slate-200 rounded-lg px-2.5 py-1 text-xs focus:border-purple-500 focus:outline-none cursor-pointer"
+                        className="bg-[#0e1422] border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs focus:border-purple-500 focus:outline-none cursor-pointer"
                       >
                         <option value="admin">Admin</option>
                         <option value="analyst">Analyst</option>
@@ -241,10 +241,10 @@ export default function AdminPanel() {
                       </select>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-medium ${
                         u.provider === 'google' 
-                          ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30' 
-                          : 'bg-slate-800 text-slate-400 border border-slate-700'
+                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' 
+                          : 'bg-slate-800 text-slate-300 border border-slate-700'
                       }`}>
                         {u.provider || 'local'}
                       </span>

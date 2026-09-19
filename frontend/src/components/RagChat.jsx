@@ -157,14 +157,14 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
   ];
 
   return (
-    <div className="bg-slate-900/85 backdrop-blur-md border border-slate-800 rounded-3xl p-4 sm:p-7 shadow-2xl shadow-black/50 space-y-4 sm:space-y-6 flex flex-col justify-between min-h-[580px]">
+    <div className="bg-[#111827] border border-slate-700/80 rounded-2xl p-4 sm:p-6 space-y-4 shadow-md flex flex-col h-[700px] sm:h-[750px] relative">
       
-      {/* Hidden File Input for Paperclip Upload */}
+      {/* Hidden File Input for Direct Attachments */}
       <input
-        type="file"
         ref={fileInputRef}
-        onChange={handleFileAttach}
+        type="file"
         accept=".pdf,application/pdf"
+        onChange={handleFileAttach}
         className="hidden"
       />
 
@@ -172,15 +172,15 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
       <div className="space-y-3 border-b border-slate-800 pb-3.5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center space-x-3">
-            <div className="p-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex-shrink-0">
+            <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex-shrink-0">
               <MessageSquare className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h2 className="text-base sm:text-lg font-bold text-slate-100">
+                <h2 className="text-base sm:text-lg font-bold text-white">
                   Document AI Chat & Direct Attachment
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                   Grounded
                 </span>
               </div>
@@ -196,7 +196,7 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingFile}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5 shadow-sm"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5 shadow-sm"
               title="Attach and analyze new PDF"
             >
               <Paperclip className="w-3.5 h-3.5 text-cyan-400" />
@@ -206,17 +206,17 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
         </div>
 
         {/* Blockchain Cryptographic Verification Bar */}
-        <div className="p-2.5 rounded-2xl bg-slate-950/70 border border-slate-800 flex items-center justify-between text-xs text-slate-400 font-mono">
+        <div className="p-2.5 rounded-xl bg-[#0e1422] border border-slate-700/80 flex items-center justify-between text-xs text-slate-300 font-mono">
           <div className="flex items-center space-x-2 truncate">
             <ShieldCheck className="w-4 h-4 text-emerald-400 flex-shrink-0" />
             <span className="text-emerald-400 font-bold">Tamper-Proof Ledger:</span>
-            <span className="truncate text-slate-400">
+            <span className="truncate text-slate-300">
               {activeBlockchainSeal?.block_receipt || 'SHA-256 Certified & Anti-Malware Validated'}
             </span>
           </div>
           <button
             onClick={() => setShowSealDetails(!showSealDetails)}
-            className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center space-x-0.5 flex-shrink-0 ml-2"
+            className="text-[11px] text-cyan-400 hover:text-cyan-300 flex items-center space-x-0.5 flex-shrink-0 ml-2"
           >
             <span>{showSealDetails ? 'Hide Seal' : 'Inspect Seal'}</span>
             {showSealDetails ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -225,7 +225,7 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
 
         {/* Expandable Blockchain Details */}
         {showSealDetails && (
-          <div className="p-3.5 rounded-xl bg-slate-950/90 border border-cyan-500/30 text-[11px] font-mono text-slate-300 space-y-1.5 animate-in fade-in">
+          <div className="p-3.5 rounded-xl bg-[#0e1422] border border-cyan-500/40 text-xs font-mono text-slate-200 space-y-1.5 animate-in fade-in">
             <div className="flex justify-between">
               <span className="text-slate-400">Integrity Status:</span>
               <span className="text-emerald-400 font-bold">VERIFIED_IMMUTABLE</span>
@@ -250,7 +250,7 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
 
       {/* Suggested Quick Question Chips */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none text-xs">
-        <span className="text-slate-500 text-[11px] font-mono flex-shrink-0 mr-1 hidden sm:inline">
+        <span className="text-slate-400 text-xs font-mono flex-shrink-0 mr-1 hidden sm:inline">
           Suggestions:
         </span>
         {suggestedQuestions.map((sq, idx) => (
@@ -259,7 +259,7 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
             type="button"
             disabled={isLoading || isUploadingFile}
             onClick={() => handleSend(sq)}
-            className="px-3 py-1.5 rounded-xl bg-slate-950/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800/80 text-[11px] whitespace-nowrap transition flex-shrink-0"
+            className="px-3 py-1.5 rounded-lg bg-[#0e1422] hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 text-xs whitespace-nowrap transition flex-shrink-0"
           >
             {sq}
           </button>
@@ -278,9 +278,9 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
               <div
                 className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold ${
                   isUser
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950'
+                    ? 'bg-emerald-600 text-white shadow-md'
                     : msg.isSealAnnouncement
-                    ? 'bg-cyan-600 text-white border border-cyan-400 shadow-md shadow-cyan-950'
+                    ? 'bg-cyan-600 text-white border border-cyan-400 shadow-md'
                     : 'bg-slate-800 border border-slate-700 text-cyan-400'
                 }`}
               >
@@ -288,21 +288,21 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
               </div>
 
               <div
-                className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-3.5 sm:p-4 text-xs sm:text-sm leading-relaxed ${
+                className={`max-w-[88%] sm:max-w-[80%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
                   isUser
-                    ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-medium shadow-md shadow-emerald-950/40'
+                    ? 'bg-emerald-600 text-white font-medium shadow-md'
                     : msg.isSealAnnouncement
-                    ? 'bg-slate-950 border border-cyan-500/40 text-cyan-100 shadow-lg shadow-cyan-950/20 font-mono'
-                    : 'bg-slate-950/80 border border-slate-800 text-slate-200 shadow-inner'
+                    ? 'bg-[#0e1422] border border-cyan-500/50 text-cyan-100 font-mono shadow-sm'
+                    : 'bg-[#0e1422] border border-slate-700/80 text-slate-100 shadow-sm'
                 }`}
               >
                 <div className="whitespace-pre-line">{msg.content}</div>
 
                 {/* Citations List */}
                 {msg.citations && msg.citations.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-slate-800/80 space-y-2">
-                    <div className="text-[10px] font-mono uppercase text-cyan-400 font-bold flex items-center">
-                      <BookOpen className="w-3 h-3 mr-1" /> Verifiable Document Citations ({msg.citations.length})
+                  <div className="mt-3 pt-3 border-t border-slate-700/80 space-y-2">
+                    <div className="text-[11px] font-mono uppercase text-cyan-400 font-bold flex items-center">
+                      <BookOpen className="w-3.5 h-3.5 mr-1" /> Verifiable Document Citations ({msg.citations.length})
                     </div>
                     <div className="space-y-1.5">
                       {msg.citations.map((c, cIdx) => (
@@ -322,13 +322,13 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
                               });
                             }
                           }}
-                          className="p-2.5 rounded-xl bg-black/60 border border-cyan-500/20 text-[11px] font-mono text-cyan-200/90 hover:border-cyan-500/50 transition cursor-pointer flex items-start justify-between gap-2"
+                          className="p-3 rounded-xl bg-slate-900 border border-cyan-500/30 text-xs font-mono text-cyan-200 hover:border-cyan-500/60 transition cursor-pointer flex items-start justify-between gap-2"
                         >
-                          <div className="space-y-0.5">
+                          <div className="space-y-1">
                             <span className="text-emerald-400 font-bold block">Page {c.page}:</span>
-                            <p className="italic text-slate-300">"{c.snippet}"</p>
+                            <p className="italic text-slate-200">"{c.snippet}"</p>
                           </div>
-                          <span className="text-[10px] text-cyan-400 flex-shrink-0 mt-0.5">Inspect</span>
+                          <span className="text-[11px] text-cyan-400 font-semibold flex-shrink-0 mt-0.5">Inspect</span>
                         </div>
                       ))}
                     </div>
@@ -371,42 +371,45 @@ export default function RagChat({ documentId, companyName, onInspectCitation, on
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar with Attachment Paperclip Button - Sticky on Mobile */}
-      <form 
-        onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
-        className="pt-2 md:relative fixed bottom-14 md:bottom-auto left-0 right-0 px-3 py-2.5 bg-[#070b16]/95 md:bg-transparent backdrop-blur-md md:backdrop-blur-none border-t border-slate-800 md:border-t-0 z-30 flex items-center shadow-2xl md:shadow-none"
-      >
-        <div className="relative w-full max-w-7xl mx-auto flex items-center">
-          {/* Attachment Paperclip Button */}
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isUploadingFile}
-            title="Attach PDF report to chat"
-            className="absolute left-2.5 p-2 rounded-xl text-slate-400 hover:text-cyan-400 hover:bg-slate-800/80 transition z-10"
-          >
-            <Paperclip className="w-4 h-4" />
-          </button>
+      {/* Chat Input Bar */}
+      <div className="pt-2 border-t border-slate-800">
+        <form onSubmit={(e) => { e.preventDefault(); handleSend(); }} className="flex items-center space-x-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={inputQuestion}
+              onChange={(e) => setInputQuestion(e.target.value)}
+              placeholder="Ask about revenue, net income, margins, risks, or audit citations..."
+              disabled={isLoading || isUploadingFile}
+              className="w-full bg-[#0e1422] border border-slate-700/80 rounded-xl pl-4 pr-10 py-3 text-xs sm:text-sm text-slate-100 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition disabled:opacity-50"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingFile}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-400 transition"
+              title="Attach PDF"
+            >
+              <Paperclip className="w-4 h-4" />
+            </button>
+          </div>
 
-          <input
-            type="text"
-            value={inputQuestion}
-            onChange={(e) => setInputQuestion(e.target.value)}
-            placeholder={`Ask anything about ${companyName || 'this report'} or attach a PDF...`}
-            disabled={isLoading || isUploadingFile}
-            className="w-full bg-slate-950 border border-slate-800 rounded-2xl pl-11 pr-12 py-3 text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/60 shadow-inner"
-          />
-
-          {/* Send Button */}
           <button
             type="submit"
             disabled={!inputQuestion.trim() || isLoading || isUploadingFile}
-            className="absolute right-2 p-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 text-white rounded-xl transition shadow-md shadow-emerald-950 z-10"
+            className="px-4 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-semibold text-xs transition flex items-center space-x-1.5 shadow-sm flex-shrink-0"
           >
-            <Send className="w-4 h-4" />
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <span className="hidden sm:inline">Ask</span>
+                <Send className="w-3.5 h-3.5" />
+              </>
+            )}
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
 
     </div>
   );

@@ -11,16 +11,16 @@ export default function ExecutiveInterpretation({ interpretation, onInspectCitat
   const { summary_text, claims = [] } = interpretation;
 
   return (
-    <div className="bg-slate-900/80 backdrop-blur-sm border border-slate-800 rounded-3xl p-5 sm:p-7 space-y-6 shadow-xl shadow-black/40">
+    <div className="bg-[#111827] border border-slate-700/80 rounded-2xl p-5 sm:p-7 space-y-6 shadow-md">
       
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
         <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
+          <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-slate-100">
+            <h2 className="text-base sm:text-lg font-bold text-white">
               Grounded Executive Interpretation
             </h2>
             <p className="text-xs text-slate-400">
@@ -30,7 +30,7 @@ export default function ExecutiveInterpretation({ interpretation, onInspectCitat
         </div>
 
         <div className="flex items-center space-x-2">
-          <span className="inline-flex items-center text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-bold">
+          <span className="inline-flex items-center text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-bold">
             <ShieldCheck className="w-4 h-4 mr-1 text-emerald-400" />
             100% Grounded
           </span>
@@ -38,14 +38,14 @@ export default function ExecutiveInterpretation({ interpretation, onInspectCitat
       </div>
 
       {/* Main ~300-word Summary */}
-      <div className="prose prose-invert max-w-none text-slate-200 text-sm sm:text-base leading-relaxed font-normal bg-slate-950/60 p-5 rounded-2xl border border-slate-800/80 shadow-inner">
+      <div className="prose prose-invert max-w-none text-slate-100 text-sm sm:text-base leading-relaxed font-normal bg-[#0e1422] p-5 rounded-xl border border-slate-700/80 shadow-inner">
         <p className="whitespace-pre-line">{summary_text}</p>
       </div>
 
       {/* Grounded Claims List */}
       {claims.length > 0 && (
         <div className="space-y-3">
-          <h3 className="text-xs font-mono uppercase tracking-wider text-slate-400 flex items-center space-x-1.5">
+          <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center space-x-1.5">
             <Quote className="w-3.5 h-3.5 text-emerald-400" />
             <span>Key Executive Claims & Citations ({claims.length})</span>
           </h3>
@@ -57,10 +57,10 @@ export default function ExecutiveInterpretation({ interpretation, onInspectCitat
                 <div
                   key={idx}
                   onClick={() => setSelectedClaimIdx(isSelected ? null : idx)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer ${
+                  className={`p-4 rounded-xl border transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-slate-900 border-emerald-500/60 shadow-lg shadow-emerald-950/30'
-                      : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-900/40'
+                      ? 'bg-[#162032] border-emerald-500 shadow-md ring-1 ring-emerald-500'
+                      : 'bg-[#0e1422] border-slate-700/80 hover:border-slate-600 hover:bg-[#162032]'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -69,16 +69,16 @@ export default function ExecutiveInterpretation({ interpretation, onInspectCitat
                         {idx + 1}
                       </span>
                       <div>
-                        <p className="text-xs sm:text-sm font-semibold text-slate-100">
+                        <p className="text-xs sm:text-sm font-semibold text-white leading-snug">
                           {item.claim}
                         </p>
                         <div className="flex items-center gap-2 mt-2 flex-wrap">
                           {item.supporting_metric_fields?.map((f) => (
-                            <span key={f} className="text-[10px] font-mono px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700">
+                            <span key={f} className="text-[11px] font-mono px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-200 border border-slate-700">
                               {f}
                             </span>
                           ))}
-                          <span className="text-[11px] text-emerald-400 font-mono font-semibold">
+                          <span className="text-xs text-emerald-400 font-mono font-semibold">
                             Source: Page {item.source_page}
                           </span>
                         </div>

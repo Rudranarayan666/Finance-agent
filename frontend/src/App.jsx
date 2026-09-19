@@ -241,7 +241,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070a12] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
 
       {/* Top Navigation */}
       <Navbar
@@ -253,7 +253,7 @@ export default function App() {
       />
 
       {/* Main Responsive Container */}
-      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8 relative z-10 pb-20 md:pb-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 relative z-10 pb-24 md:pb-12">
         
         {/* Landing Hero Overview (Collapsible on Visualizations View) */}
         {showHero && (activeTab === 'visualizations' || activeTab === 'dashboard') && (
@@ -339,34 +339,34 @@ export default function App() {
 
             {/* Document Meta Header */}
             {analysisResult?.document_meta ? (
-              <div className="bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-lg relative">
+              <div className="bg-[#111827] border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-md relative">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     <div className="flex items-center space-x-2.5 flex-wrap gap-y-1.5">
-                      <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight">
+                      <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
                         {analysisResult.document_meta.company_name}
                       </h1>
-                      <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      <span className="px-2.5 py-0.5 rounded-md text-xs font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                         {analysisResult.document_meta.fiscal_period}
                       </span>
-                      <span className="px-2.5 py-0.5 rounded-md text-xs font-mono bg-slate-800 text-slate-300 border border-slate-700">
+                      <span className="px-2.5 py-0.5 rounded-md text-xs font-mono bg-slate-800 text-slate-200 border border-slate-700">
                         {analysisResult.document_meta.filing_type}
                       </span>
                     </div>
 
-                    <div className="flex items-center space-x-2 sm:space-x-3 text-[11px] sm:text-xs text-slate-400 font-mono flex-wrap">
-                      <span>Pages: <strong className="text-slate-200">{analysisResult.document_meta.total_pages}</strong></span>
-                      <span>•</span>
-                      <span>Role: <strong className="text-emerald-400">{analysisResult.document_meta.access_level}</strong></span>
-                      <span>•</span>
+                    <div className="flex items-center space-x-2 sm:space-x-3 text-xs text-slate-300 font-mono flex-wrap">
+                      <span>Pages: <strong className="text-white">{analysisResult.document_meta.total_pages}</strong></span>
+                      <span className="text-slate-500">•</span>
+                      <span>Access: <strong className="text-emerald-400 capitalize">{analysisResult.document_meta.access_level}</strong></span>
+                      <span className="text-slate-500">•</span>
                       <span>Latency: <strong className="text-slate-200">{analysisResult.processing_meta?.total_latency_ms || 0}ms</strong></span>
                     </div>
                   </div>
 
                   {/* Trust Score Badge & Actions */}
                   <div className="flex items-center space-x-2.5 self-start md:self-auto">
-                    <div className="px-3 py-1.5 rounded-xl bg-slate-950/70 border border-slate-800 text-right">
-                      <div className="text-[10px] uppercase font-mono text-slate-400">Grounding</div>
+                    <div className="px-3.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-right">
+                      <div className="text-[10px] uppercase font-mono text-slate-400 font-semibold tracking-wider">Grounding</div>
                       <div className="text-sm sm:text-base font-bold text-emerald-400">
                         {analysisResult.coverage_report?.fields_found || 0}/8 Verified
                       </div>
@@ -374,7 +374,7 @@ export default function App() {
 
                     <button
                       onClick={() => setActiveTab('chat')}
-                      className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 shadow-sm"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold transition flex items-center space-x-2 shadow-sm"
                       title="Open Document Chat"
                     >
                       <MessageSquare className="w-3.5 h-3.5" />
@@ -383,7 +383,7 @@ export default function App() {
 
                     <button
                       onClick={() => setShareDocId(activeDocument?.id)}
-                      className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 transition"
+                      className="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 transition"
                       title="Share Analysis"
                     >
                       <Share2 className="w-4 h-4" />
@@ -392,16 +392,16 @@ export default function App() {
                 </div>
               </div>
             ) : isProcessing ? (
-              <div className="p-8 sm:p-12 rounded-3xl bg-slate-900/70 border border-slate-800 text-center space-y-4 backdrop-blur-md">
+              <div className="p-8 sm:p-12 rounded-2xl bg-[#111827] border border-slate-700/80 text-center space-y-4">
                 <Loader2 className="w-10 h-10 text-emerald-400 animate-spin mx-auto" />
-                <h3 className="text-base sm:text-lg font-bold text-slate-200">Executing Multi-Agent Financial Extraction...</h3>
-                <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">{currentJob?.step || 'Extracting statements, computing margins & validating citations...'}</p>
+                <h3 className="text-base sm:text-lg font-bold text-white">Executing Multi-Agent Financial Extraction...</h3>
+                <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto">{currentJob?.step || 'Extracting statements, computing margins & validating citations...'}</p>
               </div>
             ) : (
-              <div className="p-8 sm:p-10 rounded-3xl bg-slate-900/40 border border-slate-800 text-center space-y-2 backdrop-blur-sm">
-                <FileText className="w-10 sm:w-12 h-10 sm:h-12 text-slate-600 mx-auto" />
-                <h3 className="text-sm sm:text-base font-bold text-slate-300">No Active Filing Selected</h3>
-                <p className="text-xs text-slate-400">Upload a report PDF above or choose a filing from the Documents repository.</p>
+              <div className="p-8 sm:p-10 rounded-2xl bg-[#111827]/70 border border-slate-800 text-center space-y-2">
+                <FileText className="w-10 sm:w-12 h-10 sm:h-12 text-slate-500 mx-auto" />
+                <h3 className="text-base font-bold text-slate-200">No Active Filing Selected</h3>
+                <p className="text-xs sm:text-sm text-slate-400">Upload a report PDF above or choose a filing from the Documents repository.</p>
               </div>
             )}
 
@@ -515,38 +515,40 @@ export default function App() {
                     selectDocument(doc.id);
                     setActiveTab('visualizations');
                   }}
-                  className={`p-4 sm:p-5 rounded-2xl border transition cursor-pointer flex flex-col justify-between backdrop-blur-sm ${
+                  className={`p-4 sm:p-5 rounded-2xl border transition cursor-pointer flex flex-col justify-between ${
                     activeDocument?.id === doc.id
-                      ? 'bg-slate-900 border-emerald-500 shadow-xl shadow-emerald-950/20'
-                      : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/80'
+                      ? 'bg-[#162032] border-emerald-500 shadow-md ring-1 ring-emerald-500'
+                      : 'bg-[#111827] border-slate-700/80 hover:border-slate-600 hover:bg-[#162032]'
                   }`}
                 >
-                  <div>
-                    <div className="flex items-start justify-between">
-                      <div className="p-2.5 rounded-xl bg-slate-800 text-emerald-400">
-                        <FileText className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2 truncate">
+                        <FileText className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        <span className="font-bold text-sm text-white truncate">
+                          {doc.company_name || doc.filename}
+                        </span>
                       </div>
-                      <span className="text-[10px] sm:text-[11px] font-mono px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                        {doc.total_pages} Pages
+                      <span className={`text-[10px] uppercase font-mono px-2 py-0.5 rounded font-semibold ${
+                        doc.status === 'completed'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                      }`}>
+                        {doc.status}
                       </span>
                     </div>
 
-                    <h3 className="font-bold text-xs sm:text-sm text-white mt-3.5 truncate">{doc.company_name || doc.filename}</h3>
-                    <div className="text-xs text-slate-400 mt-1">
-                      {doc.company_name ? `${doc.company_name} • ${doc.fiscal_period || ''}` : 'Filing processed'}
-                    </div>
-
-                    {/* Cryptographic SHA-256 Hash Display */}
-                    <div className="mt-3 p-2 rounded-xl bg-slate-950/70 border border-slate-800/80 text-[10px] font-mono text-slate-400 flex items-center justify-between">
-                      <span className="text-emerald-400">SHA-256:</span>
-                      <span className="truncate max-w-[160px] text-slate-400">
-                        {doc.id.replace(/-/g, '').slice(0, 16)}...
-                      </span>
+                    <div className="text-xs text-slate-300 font-mono space-y-0.5">
+                      <div>Period: <strong className="text-white">{doc.fiscal_period || 'N/A'}</strong> ({doc.filing_type || '10-Q'})</div>
+                      <div>Pages: <strong className="text-white">{doc.total_pages}</strong></div>
                     </div>
                   </div>
 
                   <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-                    <span className="font-mono text-[10px] sm:text-[11px]">{new Date(doc.uploaded_at).toLocaleDateString()}</span>
+                    <span className="font-mono text-[11px] text-slate-400">
+                      {new Date(doc.created_at).toLocaleDateString()}
+                    </span>
+
                     <div className="flex items-center space-x-1.5">
                       <button
                         onClick={(e) => {
