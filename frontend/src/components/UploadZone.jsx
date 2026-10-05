@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { UploadCloud, FileCheck2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { UploadCloud, AlertCircle, Loader2, Sparkles, ShieldCheck } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function UploadZone({ onDocumentUploaded, isProcessing, currentJob }) {
@@ -13,14 +13,14 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
 
     // 1. File Type Validation
     if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
-      setError('Invalid file type: Please upload a valid earnings PDF document.');
+      setError('INVALID FILE TYPE: Please upload a valid SEC 10-K, 10-Q, or Annual Report PDF.');
       return;
     }
 
     // 2. File Size Validation (50MB)
     const maxBytes = 50 * 1024 * 1024;
     if (file.size > maxBytes) {
-      setError(`File size exceeds 50MB limit (Selected: ${(file.size / (1024 * 1024)).toFixed(1)}MB).`);
+      setError(`FILE TOO LARGE: Max allowed size is 50MB (Selected: ${(file.size / (1024 * 1024)).toFixed(1)}MB).`);
       return;
     }
 
@@ -33,7 +33,7 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
       }
     } catch (err) {
       setIsUploading(false);
-      setError(err.message || 'Failed to upload document. Ensure you have analyst permissions.');
+      setError(err.message || 'Failed to upload document. Ensure you have Analyst or Admin permissions.');
     }
   };
 
@@ -59,10 +59,10 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
         onDragLeave={() => setIsDragging(false)}
         onDrop={handleDrop}
         onClick={() => !isUploading && !isProcessing && fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center transition-all cursor-pointer relative overflow-hidden ${
+        className={`border-3 border-black p-5 sm:p-7 text-center transition-all cursor-pointer relative ${
           isDragging
-            ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01]'
-            : 'border-slate-700/80 hover:border-emerald-500/60 bg-[#111827] hover:bg-[#162032] shadow-sm'
+            ? 'bg-[#FEF08A] shadow-[5px_5px_0px_0px_#000]'
+            : 'bg-white shadow-[4px_4px_0px_0px_#000] hover:shadow-[6px_6px_0px_0px_#FFE600] hover:-translate-x-0.5 hover:-translate-y-0.5'
         } ${isProcessing || isUploading ? 'pointer-events-none opacity-80' : ''}`}
       >
         <input
@@ -74,52 +74,58 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
         />
 
         {isUploading || isProcessing ? (
-          <div className="py-4 space-y-4">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-              <Loader2 className="w-7 h-7 text-emerald-400 animate-spin" />
+          <div className="py-3 space-y-3 font-mono">
+            <div className="w-10 h-10 mx-auto bg-[#FFE600] border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_0px_#000]">
+              <Loader2 className="w-5 h-5 animate-spin stroke-[3]" />
             </div>
             <div>
-              <h3 className="text-base font-semibold text-white">
-                {isUploading ? 'Uploading & Verifying PDF...' : 'Multi-Agent Extraction in Progress...'}
+              <h3 className="text-xs font-black uppercase text-black tracking-wider">
+                {isUploading ? 'VERIFYING & INGESTING PDF...' : 'EXECUTING MULTI-AGENT EXTRACTION GRAPH...'}
               </h3>
-              <p className="text-xs text-slate-300 mt-1">
-                {currentJob?.step || 'Parsing page ranges, routing financial sections & verifying citations...'}
+              <p className="text-[11px] text-zinc-600 font-sans mt-0.5">
+                {currentJob?.step || 'Parsing table layout, extracting formulas & computing verification seals...'}
               </p>
             </div>
 
-            {/* Progress Bar */}
-            <div className="w-full max-w-xs mx-auto bg-slate-800 rounded-full h-2 overflow-hidden">
-              <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full animate-shimmer" style={{ width: '70%' }} />
+            {/* Neo-Brutalist Progress Bar */}
+            <div className="w-full max-w-sm mx-auto bg-zinc-200 border-2 border-black h-3.5 p-0.5 shadow-[1px_1px_0px_0px_#000]">
+              <div className="bg-[#FFE600] h-full animate-pulse border border-black" style={{ width: '85%' }} />
             </div>
           </div>
         ) : (
-          <div className="space-y-4 py-3">
-            <div className="w-14 h-14 mx-auto rounded-2xl bg-[#0e1422] border border-slate-700/80 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition">
-              <UploadCloud className="w-7 h-7" />
+          <div className="space-y-3 py-1 font-mono">
+            <div className="w-11 h-11 mx-auto bg-[#FFE600] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000] flex items-center justify-center">
+              <UploadCloud className="w-6 h-6 stroke-[2.5]" />
             </div>
 
             <div className="space-y-1">
-              <h3 className="text-base font-bold text-white">
-                Drop your earnings report here, or <span className="text-emerald-400 underline underline-offset-4 decoration-emerald-500/40">browse files</span>
+              <h3 className="text-sm font-black text-black uppercase tracking-wider">
+                DROP SEC FILING HERE OR CLICK TO BROWSE
               </h3>
-              <p className="text-xs text-slate-300">
-                Supports SEC Form 10-Q, 10-K, and Corporate Annual Reports (up to 50MB)
+              <p className="text-xs text-zinc-600 font-sans">
+                Supports 10-K, 10-Q, 8-K, Annual Reports up to 50MB (max 500 pages)
               </p>
             </div>
 
-            <div className="inline-flex items-center space-x-2 text-xs font-mono text-slate-300 bg-[#0e1422] px-3.5 py-1.5 rounded-full border border-slate-700/80">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              <span>100% Deterministic Extraction • Zero Hallucination Risk</span>
+            <div className="inline-flex items-center gap-2 pt-1 flex-wrap justify-center">
+              <span className="neo-badge text-[9px] bg-zinc-100">
+                <ShieldCheck className="w-3 h-3 text-black stroke-[2.5]" />
+                SHA-256 SEALED
+              </span>
+              <span className="neo-badge text-[9px] bg-zinc-100">
+                <Sparkles className="w-3 h-3 text-black stroke-[2.5]" />
+                ANTI-MALWARE VALIDATED
+              </span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Inline Error Display */}
+      {/* Error alert */}
       {error && (
-        <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-start space-x-2 text-xs text-red-300 animate-in fade-in duration-200">
-          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
-          <span>{error}</span>
+        <div className="mt-2.5 p-2.5 bg-[#FEE2E2] border-2 border-black text-rose-950 text-xs flex items-center space-x-2 animate-in fade-in">
+          <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
+          <span className="font-sans font-bold text-[11px]">{error}</span>
         </div>
       )}
     </div>

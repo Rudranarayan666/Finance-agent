@@ -1,65 +1,67 @@
 import React from 'react';
-import { ShieldCheck, BookOpen, X, Calculator, CheckCircle2, AlertTriangle, FileText } from 'lucide-react';
+import { BookOpen, X, Calculator, CheckCircle2, FileText, ExternalLink } from 'lucide-react';
+import { api } from '../services/api';
 
 export default function CitationModal({ citationData, onClose }) {
   if (!citationData) return null;
 
-  const { title, field, value, unit, page, quote, confidence, method, formula, company } = citationData;
+  const { title, field, value, unit, page, quote, confidence, method, formula, company, doc_id } = citationData;
+
+  const handleOpenPdfPage = () => {
+    if (doc_id && page) {
+      const url = api.getDocumentPdfUrl(doc_id) + `#page=${page}`;
+      window.open(url, '_blank');
+    }
+  };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-mono text-zinc-900">
       <div 
-        className="bg-[#111827] border border-slate-700/80 w-full max-w-xl rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden text-slate-100 space-y-6"
+        className="bg-white border-3 border-black shadow-[8px_8px_0px_0px_#000000] w-full max-w-lg p-5 relative space-y-4 animate-in fade-in"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Glow Header Accent */}
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500" />
-
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-5 right-5 p-1.5 rounded-xl bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
+          className="absolute top-4 right-4 p-1 bg-zinc-100 border-2 border-black hover:bg-[#FFE600] text-black transition"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 stroke-[3]" />
         </button>
 
         {/* Modal Header */}
-        <div className="flex items-start space-x-3.5">
-          <div className="p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 flex-shrink-0">
-            <BookOpen className="w-6 h-6" />
+        <div className="flex items-start space-x-3 pb-3 border-b-2 border-black">
+          <div className="w-9 h-9 bg-[#FFE600] text-black border-2 border-black flex items-center justify-center font-bold flex-shrink-0">
+            <BookOpen className="w-5 h-5 stroke-[2.5]" />
           </div>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-mono uppercase text-emerald-400 font-semibold tracking-wider">
-                Verifiable Grounding Citation
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">
-                100% Deterministic Match
+              <span className="neo-badge-yellow text-[9px]">
+                VERIFIABLE GROUNDING CITATION
               </span>
             </div>
-            <h3 className="text-xl font-bold text-white mt-1">
+            <h3 className="text-base sm:text-lg font-black text-black uppercase mt-0.5">
               {title || field}
             </h3>
-            <p className="text-xs text-slate-300 font-mono">
-              Filing: {company || 'Target Company'} • Source Page {page || 1}
+            <p className="text-xs text-zinc-800 font-sans font-medium">
+              Filing: <strong>{company || 'Corporate Filing'}</strong> &bull; Source Page {page || 1}
             </p>
           </div>
         </div>
 
         {/* Extracted Value Callout */}
-        <div className="p-4 rounded-xl bg-[#0e1422] border border-slate-700/80 flex items-center justify-between">
+        <div className="neo-card bg-[#FBFBFA] border-2 border-black flex items-center justify-between p-3.5">
           <div>
-            <div className="text-xs text-slate-300 font-medium">Extracted Value</div>
-            <div className="text-2xl font-black text-white mt-0.5">
+            <div className="text-xs text-zinc-800 font-black uppercase">EXTRACTED VALUE</div>
+            <div className="text-xl sm:text-2xl font-black text-black mt-0.5">
               {value || 'Not Disclosed'}
             </div>
-            {unit && <div className="text-xs text-slate-300 font-mono">{unit}</div>}
+            {unit && <div className="text-xs text-zinc-700 font-mono font-bold">{unit}</div>}
           </div>
 
           <div className="text-right space-y-1">
-            <div className="text-xs font-mono text-slate-300">Extraction Confidence</div>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
+            <div className="text-xs font-black text-zinc-800 uppercase">CONFIDENCE</div>
+            <span className="neo-badge-green text-xs font-black">
+              <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />
               {confidence?.toUpperCase() || 'HIGH'}
             </span>
           </div>
@@ -67,39 +69,50 @@ export default function CitationModal({ citationData, onClose }) {
 
         {/* Verbatim Quote Box */}
         {quote && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-300 font-mono">
-              <span className="flex items-center text-emerald-400 font-semibold">
-                <FileText className="w-3.5 h-3.5 mr-1" /> Verbatim PDF Excerpt (Page {page}):
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between text-xs uppercase text-zinc-800 font-black">
+              <span className="flex items-center text-black">
+                <FileText className="w-3.5 h-3.5 mr-1 stroke-[2.5]" /> VERBATIM EXCERPT (PAGE {page}):
               </span>
-              <span className="text-slate-400">Substring Matched</span>
+              <span className="text-zinc-800 font-black">SUBSTRING VERIFIED</span>
             </div>
-            <div className="p-4 rounded-xl bg-[#0e1422] border border-emerald-500/40 font-mono text-xs sm:text-sm text-emerald-200 leading-relaxed italic relative">
-              <span className="text-2xl font-serif text-emerald-500/40 absolute top-2 left-2">“</span>
-              <p className="pl-4 pr-2">{quote}</p>
-              <span className="text-2xl font-serif text-emerald-500/40 absolute bottom-1 right-3">”</span>
+            <div className="p-3 bg-[#FFFDE7] border-2 border-black font-sans text-xs sm:text-sm text-zinc-950 leading-relaxed italic font-medium">
+              <p>"{quote}"</p>
             </div>
           </div>
         )}
 
         {/* Formula Details if computed */}
         {formula && (
-          <div className="p-3.5 rounded-xl bg-[#0e1422] border border-teal-800/40 text-xs text-teal-300 font-mono space-y-1">
-            <div className="font-bold flex items-center">
-              <Calculator className="w-3.5 h-3.5 mr-1.5" /> Deterministic Calculation:
+          <div className="p-2.5 bg-blue-50 border-2 border-black text-xs text-blue-950 space-y-1">
+            <div className="font-black flex items-center uppercase text-xs">
+              <Calculator className="w-3.5 h-3.5 mr-1.5 stroke-[2.5]" /> DETERMINISTIC FORMULA:
             </div>
-            <div>{formula}</div>
+            <div className="font-mono text-xs sm:text-sm font-bold">{formula}</div>
           </div>
         )}
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-xs text-slate-400">
-          <span>Extraction Method: <strong className="text-slate-300">{method || 'Direct Statement'}</strong></span>
+        <div className="flex items-center justify-between pt-2 border-t-2 border-black text-xs sm:text-sm">
+          {doc_id && page ? (
+            <button
+              onClick={handleOpenPdfPage}
+              className="neo-button-primary text-xs sm:text-sm py-1.5 px-3"
+            >
+              <span>OPEN PDF PAGE {page}</span>
+              <ExternalLink className="w-3.5 h-3.5 stroke-[3]" />
+            </button>
+          ) : (
+            <span className="text-xs text-zinc-800 font-sans font-medium">
+              Method: <strong>{method || 'Direct Statement'}</strong>
+            </span>
+          )}
+
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition shadow-lg shadow-emerald-950"
+            className="neo-button-secondary text-xs sm:text-sm py-1.5 px-4 font-black"
           >
-            Done
+            CLOSE
           </button>
         </div>
 

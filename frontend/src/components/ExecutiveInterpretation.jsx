@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, ShieldCheck, Quote, ChevronDown, ChevronUp, Sparkles, ExternalLink } from 'lucide-react';
+import { ShieldCheck, Quote, ChevronDown, ChevronUp, Sparkles, ExternalLink } from 'lucide-react';
 
 export default function ExecutiveInterpretation({ interpretation, onInspectCitation, companyName }) {
   const [selectedClaimIdx, setSelectedClaimIdx] = useState(null);
@@ -11,114 +11,92 @@ export default function ExecutiveInterpretation({ interpretation, onInspectCitat
   const { summary_text, claims = [] } = interpretation;
 
   return (
-    <div className="bg-[#111827] border border-slate-700/80 rounded-2xl p-5 sm:p-7 space-y-6 shadow-md">
+    <div className="neo-card bg-white border-3 shadow-[4px_4px_0px_0px_#000] p-4 sm:p-5 space-y-4 font-mono text-zinc-900">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400">
-            <Sparkles className="w-5 h-5" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-[#FFE600] text-black border-2 border-black flex items-center justify-center font-bold">
+            <Sparkles className="w-4 h-4 stroke-[3]" />
           </div>
           <div>
-            <h2 className="text-base sm:text-lg font-bold text-white">
-              Grounded Executive Interpretation
+            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-wider">
+              GROUNDED EXECUTIVE SYNTHESIS
             </h2>
-            <p className="text-xs text-slate-400">
-              Deterministic synthesis reasoning exclusively from verified citations
+            <p className="text-[11px] text-zinc-600 font-sans">
+              Deterministic financial summary strictly verified against disclosed statement pages
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
-          <span className="inline-flex items-center text-xs font-mono px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 font-bold">
-            <ShieldCheck className="w-4 h-4 mr-1 text-emerald-400" />
-            100% Grounded
+          <span className="neo-badge-yellow text-[10px]">
+            <ShieldCheck className="w-3.5 h-3.5 stroke-[3]" />
+            <span>100% GROUNDED</span>
           </span>
         </div>
       </div>
 
-      {/* Main ~300-word Summary */}
-      <div className="prose prose-invert max-w-none text-slate-100 text-sm sm:text-base leading-relaxed font-normal bg-[#0e1422] p-5 rounded-xl border border-slate-700/80 shadow-inner">
+      {/* Main Executive Summary */}
+      <div className="bg-[#FBFBFA] p-3.5 border-2 border-black text-xs text-zinc-900 leading-relaxed font-sans font-medium">
         <p className="whitespace-pre-line">{summary_text}</p>
       </div>
 
       {/* Grounded Claims List */}
       {claims.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center space-x-1.5">
-            <Quote className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Key Executive Claims & Citations ({claims.length})</span>
+        <div className="space-y-2.5">
+          <h3 className="text-xs font-black uppercase tracking-wider text-black flex items-center space-x-1.5">
+            <Quote className="w-3.5 h-3.5 text-black stroke-[2.5]" />
+            <span>KEY EXECUTIVE CLAIMS &bull; CITATIONS ({claims.length})</span>
           </h3>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {claims.map((item, idx) => {
               const isSelected = selectedClaimIdx === idx;
               return (
                 <div
                   key={idx}
                   onClick={() => setSelectedClaimIdx(isSelected ? null : idx)}
-                  className={`p-4 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-[#162032] border-emerald-500 shadow-md ring-1 ring-emerald-500'
-                      : 'bg-[#0e1422] border-slate-700/80 hover:border-slate-600 hover:bg-[#162032]'
+                  className={`p-3 border-2 border-black bg-white cursor-pointer transition-all ${
+                    isSelected ? 'shadow-[4px_4px_0px_0px_#FFE600] bg-[#FFFDE7]' : 'hover:shadow-[2px_2px_0px_0px_#000]'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start space-x-3">
-                      <span className="w-6 h-6 rounded-full bg-slate-800 text-emerald-400 text-xs font-mono font-bold flex items-center justify-center flex-shrink-0 mt-0.5 border border-slate-700">
-                        {idx + 1}
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-xs font-sans text-black font-semibold leading-snug">
+                      "{item.claim}"
+                    </p>
+                    <div className="flex items-center space-x-1 flex-shrink-0">
+                      <span className="neo-badge-yellow text-[9px] py-0">
+                        PAGE {item.source?.page || 1}
                       </span>
-                      <div>
-                        <p className="text-xs sm:text-sm font-semibold text-white leading-snug">
-                          {item.claim}
-                        </p>
-                        <div className="flex items-center gap-2 mt-2 flex-wrap">
-                          {item.supporting_metric_fields?.map((f) => (
-                            <span key={f} className="text-[11px] font-mono px-2.5 py-0.5 rounded-md bg-slate-800 text-slate-200 border border-slate-700">
-                              {f}
-                            </span>
-                          ))}
-                          <span className="text-xs text-emerald-400 font-mono font-semibold">
-                            Source: Page {item.source_page}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2 text-slate-400 mt-1">
-                      {onInspectCitation && item.supporting_quote && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onInspectCitation({
-                              title: `Executive Claim #${idx + 1}`,
-                              field: item.supporting_metric_fields?.join(', ') || 'executive_claim',
-                              value: item.claim,
-                              page: item.source_page,
-                              quote: item.supporting_quote,
-                              confidence: 'high',
-                              method: 'grounded_synthesis',
-                              company: companyName
-                            });
-                          }}
-                          className="p-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 transition"
-                          title="Open Citation Inspector"
-                        >
-                          <ExternalLink className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isSelected ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      {isSelected ? <ChevronUp className="w-3 h-3 stroke-[3]" /> : <ChevronDown className="w-3 h-3 stroke-[3]" />}
                     </div>
                   </div>
 
-                  {/* Supporting Verbatim Quote */}
-                  {isSelected && item.supporting_quote && (
-                    <div className="mt-3 pt-3 border-t border-slate-800 text-xs text-slate-300 animate-in fade-in duration-150">
-                      <div className="p-3.5 rounded-xl bg-black/70 border border-emerald-500/20 font-mono text-[11px] text-slate-300">
-                        <span className="text-emerald-400 font-bold block mb-1">
-                          Verbatim PDF Supporting Evidence (Page {item.source_page}):
-                        </span>
-                        <p className="italic text-emerald-200/90">"{item.supporting_quote}"</p>
+                  {isSelected && (
+                    <div className="mt-2 pt-2 border-t border-black text-[11px] space-y-2 animate-in fade-in">
+                      <div className="bg-[#FBFBFA] p-2 border border-black font-sans text-xs italic text-zinc-800">
+                        "{item.source?.quote || 'Verbatim quote from filing'}"
+                      </div>
+                      <div className="flex justify-end">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onInspectCitation) {
+                              onInspectCitation({
+                                title: `Claim Citation (Page ${item.source?.page})`,
+                                page: item.source?.page,
+                                quote: item.source?.quote,
+                                company: companyName
+                              });
+                            }
+                          }}
+                          className="neo-button-secondary text-[10px] py-0.5 px-2"
+                        >
+                          <span>INSPECT EXCERPT</span>
+                          <ExternalLink className="w-3 h-3 stroke-[2.5]" />
+                        </button>
                       </div>
                     </div>
                   )}

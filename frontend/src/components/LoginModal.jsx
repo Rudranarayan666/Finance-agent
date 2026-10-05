@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Lock, Mail, User, KeyRound, Sparkles, X, AlertCircle, CheckCircle2, Shield } from 'lucide-react';
+import { Lock, Mail, User, KeyRound, Sparkles, X, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
 
@@ -14,25 +14,33 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
 
   if (!isOpen) return null;
 
+  const isAdmin = email.toLowerCase().includes('admin');
+
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setError(null);
-    setIsLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setError('Please enter a valid corporate email.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must contain at least 6 characters.');
+      return;
+    }
+
+    setIsLoading(true);
     try {
       if (isRegister) {
-        await api.register(email, password, fullName, role);
+        const finalRole = cleanEmail.includes('admin') ? 'admin' : role;
+        await api.register(cleanEmail, password, fullName, finalRole);
       }
-      const loginRes = await api.login(email, password);
+      const loginRes = await api.login(cleanEmail, password);
       setIsLoading(false);
       
-      // Confetti celebration on login
       try {
-        confetti({
-          particleCount: 70,
-          spread: 60,
-          origin: { y: 0.6 }
-        });
+        confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
       } catch (e) {}
 
       onLoginSuccess(loginRes.user);
@@ -63,155 +71,168 @@ export default function LoginModal({ isOpen, onClose, onLoginSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-      <div className="bg-[#0e1424] border border-slate-700/90 w-full max-w-md rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 font-mono text-zinc-900">
+      <div className="bg-white border-3 border-black shadow-[6px_6px_0px_0px_#000000] max-w-md w-full p-6 relative space-y-4">
         
-        {/* Top Accent Gradient */}
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500" />
-
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-200 p-1 rounded-lg"
+          className="absolute top-4 right-4 p-1 border-2 border-black bg-zinc-100 hover:bg-[#FFE600] transition"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 stroke-[3]" />
         </button>
 
-        {/* Modal Header */}
-        <div className="text-center space-y-2 mb-6">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-lg shadow-emerald-950">
-            <Shield className="w-6 h-6" />
+        {/* Brand Header */}
+        <div className="border-b-2 border-black pb-3 text-center space-y-1">
+          <div className="w-9 h-9 bg-[#FFE600] border-2 border-black shadow-[2px_2px_0px_0px_#000] mx-auto flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-black stroke-[2.5]" />
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">
-            {isRegister ? 'Create Corporate Account' : 'Sign In to FinanceAgent'}
+          <h2 className="text-base font-black text-black uppercase tracking-wider">
+            FINANCEAGENT ACCESS PORTAL
           </h2>
-          <p className="text-xs text-slate-400">
-            Multi-Agent Financial Analyzer • Role-Based Access Control
+          <p className="text-[10px] text-zinc-600 font-sans">
+            Role-Based Access Control &bull; Grounded Citations Engine
           </p>
         </div>
 
-        {/* Quick Role Demo Selector */}
-        <div className="mb-6 p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
-          <div className="text-[11px] font-mono uppercase text-slate-400 flex items-center justify-between">
-            <span>One-Click Role Presets:</span>
-            <span className="text-emerald-400 font-bold">Auto-Seeded</span>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleQuickDemoRole('analyst')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition flex flex-col items-center space-y-0.5 border ${
-                role === 'analyst'
-                  ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-950'
-                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border-slate-700'
-              }`}
-            >
-              <span>Analyst</span>
-              <span className="text-[9px] font-normal opacity-80">Full Access</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickDemoRole('admin')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition flex flex-col items-center space-y-0.5 border ${
-                role === 'admin'
-                  ? 'bg-purple-600 text-white border-purple-400 shadow-lg shadow-purple-950'
-                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border-slate-700'
-              }`}
-            >
-              <span>Admin</span>
-              <span className="text-[9px] font-normal opacity-80">Audit & Users</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickDemoRole('viewer')}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition flex flex-col items-center space-y-0.5 border ${
-                role === 'viewer'
-                  ? 'bg-blue-600 text-white border-blue-400 shadow-lg shadow-blue-950'
-                  : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 border-slate-700'
-              }`}
-            >
-              <span>Viewer</span>
-              <span className="text-[9px] font-normal opacity-80">Shared Only</span>
-            </button>
-          </div>
+        {/* Tab switch */}
+        <div className="grid grid-cols-2 gap-1 bg-zinc-100 p-1 border-2 border-black">
+          <button
+            type="button"
+            onClick={() => setIsRegister(false)}
+            className={`py-1 text-xs font-bold uppercase ${
+              !isRegister ? 'bg-[#FFE600] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]' : 'text-zinc-600 hover:text-black'
+            }`}
+          >
+            SIGN IN
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsRegister(true)}
+            className={`py-1 text-xs font-bold uppercase ${
+              isRegister ? 'bg-[#FFE600] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]' : 'text-zinc-600 hover:text-black'
+            }`}
+          >
+            REGISTER
+          </button>
         </div>
 
-        {error && (
-          <div className="mb-4 p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center space-x-2 animate-in fade-in">
-            <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
-            <span>{error}</span>
+        {/* Admin detection hint */}
+        {isAdmin && (
+          <div className="p-2 bg-[#FFF9C4] border-2 border-black text-[11px] text-black font-sans flex items-center gap-1.5 font-bold">
+            <ShieldCheck className="w-4 h-4 text-black stroke-[2.5]" />
+            <span>Administrator access will be granted for this email.</span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        {/* Error message */}
+        {error && (
+          <div className="p-2.5 bg-[#FEE2E2] border-2 border-black text-xs text-rose-950 flex items-start space-x-2">
+            <AlertCircle className="w-4 h-4 text-rose-700 shrink-0 mt-0.5" />
+            <span className="font-sans text-[11px] font-semibold">{error}</span>
+          </div>
+        )}
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-3">
           {isRegister && (
             <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Full Name</label>
-              <div className="relative">
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                <input
-                  type="text"
-                  required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Senior Financial Analyst"
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+              <label className="block text-[10px] font-black uppercase text-black mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Jane Analyst"
+                className="neo-input"
+              />
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Corporate Email</label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="analyst@finance.corp"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
+            <label className="block text-[10px] font-black uppercase text-black mb-1">
+              Corporate Email (use "admin" for Admin Rights)
+            </label>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="analyst@finance.corp"
+              className="neo-input"
+            />
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1 font-mono">Password</label>
-            <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500"
-              />
-            </div>
+            <label className="block text-[10px] font-black uppercase text-black mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••••••"
+              className="neo-input"
+            />
           </div>
+
+          {isRegister && (
+            <div>
+              <label className="block text-[10px] font-black uppercase text-black mb-1">
+                Role Tier
+              </label>
+              <select
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                className="neo-input cursor-pointer"
+              >
+                <option value="analyst">Analyst (Extraction &amp; RAG)</option>
+                <option value="admin">Admin (Site-Wide Control &amp; Audits)</option>
+                <option value="viewer">Viewer (Read-Only Access)</option>
+              </select>
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold tracking-wide transition shadow-xl shadow-emerald-950 flex items-center justify-center space-x-2 mt-2"
+            className="neo-button-primary w-full justify-center py-2 text-xs font-black shadow-[3px_3px_0px_0px_#000000] mt-1"
           >
-            <Sparkles className="w-4 h-4 text-white" />
-            <span>{isLoading ? 'Authenticating...' : isRegister ? 'Register & Sign In' : 'Sign In to Dashboard'}</span>
+            {isLoading ? 'VERIFYING...' : isRegister ? 'CREATE ACCOUNT' : 'ENTER WORKSPACE'}
           </button>
         </form>
 
-        <div className="mt-4 text-center">
-          <button
-            type="button"
-            onClick={() => setIsRegister(!isRegister)}
-            className="text-xs text-slate-400 hover:text-emerald-400 transition"
-          >
-            {isRegister ? 'Already have an account? Sign In' : "Need a custom account? Register here"}
-          </button>
+        {/* 1-Click Evaluation Presets */}
+        <div className="pt-2 border-t-2 border-black">
+          <div className="text-[10px] font-black uppercase text-zinc-500 text-center mb-1.5">
+            DEMO PRESET ACCOUNTS:
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickDemoRole('admin')}
+              className="neo-button-secondary text-[11px] py-1 justify-center bg-[#FFF9C4] font-black"
+            >
+              ADMIN
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickDemoRole('analyst')}
+              className="neo-button-secondary text-[11px] py-1 justify-center bg-[#E0F2FE] font-black"
+            >
+              ANALYST
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickDemoRole('viewer')}
+              className="neo-button-secondary text-[11px] py-1 justify-center bg-[#F4F4F5] font-black"
+            >
+              VIEWER
+            </button>
+          </div>
         </div>
 
       </div>

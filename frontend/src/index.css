@@ -4,56 +4,125 @@
 
 @layer base {
   body {
-    @apply bg-[#0b0f19] text-slate-100 font-sans antialiased;
+    @apply text-zinc-950 font-sans antialiased text-sm selection:bg-[#FFE600] selection:text-black;
+    background-color: #FBFBFA;
+    background-image: 
+      linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+    background-size: 32px 32px;
   }
   
-  /* Standard headings with clear contrast */
   h1, h2, h3, h4, h5, h6 {
-    @apply text-white font-bold tracking-tight;
+    @apply font-black tracking-tight text-black uppercase;
   }
 }
 
-/* Polished modern scrollbars */
+/* Light Neo-Brutalist Component Tokens */
+@layer components {
+  .neo-card {
+    @apply bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000] text-zinc-950 rounded-none p-4 transition-all;
+  }
+
+  .neo-card-yellow {
+    @apply bg-[#FFF9C4] border-2 border-black shadow-[3px_3px_0px_0px_#000000] text-zinc-950 rounded-none p-4;
+  }
+
+  .neo-card-hover {
+    @apply bg-white border-2 border-black shadow-[3px_3px_0px_0px_#000000] text-zinc-950 rounded-none p-4 transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[5px_5px_0px_0px_#FFE600] cursor-pointer;
+  }
+
+  .neo-card-emerald {
+    @apply bg-[#E8F5E9] border-2 border-black shadow-[3px_3px_0px_0px_#000000] text-zinc-950 rounded-none p-4;
+  }
+
+  .neo-card-amber {
+    @apply bg-[#FEF3C7] border-2 border-black shadow-[3px_3px_0px_0px_#000000] text-zinc-950 rounded-none p-4;
+  }
+
+  .neo-card-blue {
+    @apply bg-[#E0F2FE] border-2 border-black shadow-[3px_3px_0px_0px_#000000] text-zinc-950 rounded-none p-4;
+  }
+
+  .neo-button-primary {
+    @apply bg-[#FFE600] hover:bg-[#FFD700] text-black font-extrabold uppercase tracking-wider px-4 py-2 border-2 border-black shadow-[3px_3px_0px_0px_#000000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all rounded-none inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm;
+  }
+
+  .neo-button-secondary {
+    @apply bg-white hover:bg-zinc-100 text-black font-extrabold uppercase tracking-wider px-3.5 py-1.5 border-2 border-black shadow-[3px_3px_0px_0px_#000000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all rounded-none inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-xs sm:text-sm;
+  }
+
+  .neo-button-dark {
+    @apply bg-black hover:bg-zinc-800 text-white font-extrabold uppercase tracking-wider px-4 py-2 border-2 border-black shadow-[3px_3px_0px_0px_#FFE600] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all rounded-none inline-flex items-center gap-1.5 cursor-pointer disabled:opacity-50 text-xs sm:text-sm;
+  }
+
+  .neo-button-danger {
+    @apply bg-[#FF6B6B] hover:bg-[#FA5252] text-black font-extrabold uppercase tracking-wider px-3 py-1.5 border-2 border-black shadow-[3px_3px_0px_0px_#000000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 transition-all rounded-none inline-flex items-center gap-1.5 cursor-pointer text-xs sm:text-sm;
+  }
+
+  .neo-input {
+    @apply bg-white border-2 border-black text-black px-3 py-2 font-mono text-xs sm:text-sm font-semibold focus:outline-none focus:border-black focus:shadow-[3px_3px_0px_0px_#FFE600] rounded-none w-full transition-all placeholder:text-zinc-500;
+  }
+
+  .neo-badge {
+    @apply border-2 border-black font-mono font-black text-xs px-2 py-0.5 uppercase shadow-[2px_2px_0px_0px_#000000] rounded-none inline-flex items-center gap-1 text-black;
+  }
+
+  .neo-badge-yellow {
+    @apply bg-[#FFE600] text-black border-2 border-black font-mono font-black text-xs px-2 py-0.5 uppercase shadow-[2px_2px_0px_0px_#000000] rounded-none inline-flex items-center gap-1;
+  }
+
+  .neo-badge-blue {
+    @apply bg-[#BAE6FD] text-black border-2 border-black font-mono font-black text-xs px-2 py-0.5 uppercase shadow-[2px_2px_0px_0px_#000000] rounded-none inline-flex items-center gap-1;
+  }
+
+  .neo-badge-green {
+    @apply bg-[#BBF7D0] text-black border-2 border-black font-mono font-black text-xs px-2 py-0.5 uppercase shadow-[2px_2px_0px_0px_#000000] rounded-none inline-flex items-center gap-1;
+  }
+
+  .neo-table-header {
+    @apply bg-[#F4F4F5] border-b-2 border-black text-xs font-mono font-black uppercase tracking-wider text-black px-3.5 py-3 text-left;
+  }
+
+  .neo-table-cell {
+    @apply border-b border-zinc-200 px-3.5 py-2.5 font-mono text-xs sm:text-sm text-zinc-950 font-semibold bg-white;
+  }
+
+  .neo-label {
+    @apply text-xs font-black uppercase tracking-wider text-zinc-800;
+  }
+}
+
+.border-3 {
+  border-width: 3px;
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  animation: fadeInUp 0.15s ease-out;
+}
+
+.fade-in {
+  animation: fadeInUp 0.15s ease-out;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #F4F4F5;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 9999px;
+  background: #E4E4E7;
+  border: 1px solid #000;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
-}
-
-/* Shimmer animation for loading states */
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
-
-.animate-shimmer {
-  position: relative;
-  overflow: hidden;
-}
-
-.animate-shimmer::after {
-  position: absolute;
-  top: 0; right: 0; bottom: 0; left: 0;
-  transform: translateX(-100%);
-  background-image: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0.05) 20%,
-    rgba(255, 255, 255, 0.1) 60%,
-    rgba(255, 255, 255, 0)
-  );
-  animation: shimmer 2s infinite;
-  content: '';
+  background: #FFE600;
 }

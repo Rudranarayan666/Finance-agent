@@ -178,6 +178,14 @@ def trigger_analysis(
     }
 
 
+from pydantic import BaseModel
+from backend.app.engine.duckdb_engine import duckdb_engine
+
+
+class DuckDBQueryRequest(BaseModel):
+    query: str
+
+
 @router.get("/{document_id}")
 def get_analysis_result(
     document_id: str,
@@ -194,6 +202,16 @@ def get_analysis_result(
         access_level = "owner" if doc.uploaded_by_id == current_user.id else "shared_viewer"
         res = dict(record.result_json)
         res["document_meta"]["access_level"] = access_level
+
+        # Sync DuckDB in-memory database with latest metrics & charts
+        try:
+            duckdb_engine.load_document_data(
+                document_id,
+                res.get("metrics", []),
+                res.get("chart_data", {})
+            )
+        except Exception:
+            pass
 
         log_audit_event(db, action="view_analysis", user=current_user, document_id=document_id, request=request)
         return res
@@ -214,6 +232,39 @@ def get_analysis_result(
     }
 
 
+@router.post("/{document_id}/duckdb/query")
+def execute_duckdb_query(
+    document_id: str,
+    query_req: DuckDBQueryRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Executes vectorized DuckDB SQL queries over parsed financial metrics and tables with sub-millisecond latency.
+    """
+    check_document_access(document_id, current_user, db, required_permission="view")
+    try:
+        result = duckdb_engine.query_analytics(document_id, query_req.query)
+        return result
+    except ValueError as ve:
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"DuckDB query execution error: {str(e)}")
+
+
+@router.get("/{document_id}/duckdb/analytics")
+def get_duckdb_analytics_aggregates(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Retrieves vectorized financial metric aggregates computed via DuckDB.
+    """
+    check_document_access(document_id, current_user, db, required_permission="view")
+    return duckdb_engine.get_summary_aggregates(document_id)
+
+
 @router.post("/{document_id}/ask", response_model=AskQuestionResponse)
 def ask_document_question(
     document_id: str,
@@ -226,7 +277,8 @@ def ask_document_question(
 
     result = rag_service.answer_question(
         document_id=document_id,
-        question=ask_req.question
+        question=ask_req.question,
+        user_role=current_user.role
     )
 
     log_audit_event(
@@ -235,7 +287,7 @@ def ask_document_question(
         user=current_user, 
         document_id=document_id, 
         request=request,
-        details={"question": ask_req.question, "grounded": result["grounded"]}
+        details={"question": ask_req.question, "grounded": result["grounded"], "provider": current_user.provider or "local"}
     )
 
     return AskQuestionResponse(

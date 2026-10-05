@@ -80,6 +80,21 @@ def invite_teammate(
     db.commit()
     db.refresh(new_user)
 
+    # Dispatch email via Resend
+    from backend.app.core.email import send_resend_email
+    org_name = current_user.organization.name if current_user.organization else "FinanceCorp Global"
+    email_html = f"""
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 3px solid #000; padding: 24px; background: #fff;">
+        <h2 style="text-transform: uppercase; letter-spacing: 1px; margin-top: 0; color: #000;">FinanceAgent Invitation</h2>
+        <p>You have been invited to join <strong>{org_name}</strong> as <strong>{invite_req.role.value.upper()}</strong>.</p>
+        <p><strong>Your Temporary Password:</strong> <code style="background: #f4f4f4; padding: 4px 8px; border: 1px solid #000;">{temp_pass}</code></p>
+        <div style="margin-top: 20px;">
+            <a href="http://localhost:3000" style="background: #10b981; color: #000; font-weight: bold; padding: 12px 24px; text-decoration: none; border: 2px solid #000; box-shadow: 3px 3px 0px 0px #000; display: inline-block;">SIGN IN TO FINANCEAGENT</a>
+        </div>
+    </div>
+    """
+    send_resend_email(clean_email, f"Invitation to join {org_name} on FinanceAgent", email_html)
+
     log_audit_event(
         db,
         action="invite_teammate",

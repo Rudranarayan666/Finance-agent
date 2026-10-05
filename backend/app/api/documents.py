@@ -234,6 +234,65 @@ def share_document(
     return {"status": "success", "message": f"Document shared with {share_req.user_email}"}
 
 
+from fastapi.responses import FileResponse
+
+
+@router.get("/{document_id}/page/{page_number}")
+def get_document_page_content(
+    document_id: str,
+    page_number: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Returns exact page content and excerpts for direct citation verification.
+    """
+    doc = check_document_access(document_id, current_user, db, required_permission="view")
+    if not os.path.exists(doc.file_path):
+        raise HTTPException(status_code=404, detail="Underlying PDF file not found on disk")
+
+    try:
+        parser = PDFDocumentParser(doc.file_path)
+        extracted = parser.extract_pages()
+        pages = extracted["pages"]
+        
+        target_page = next((p for p in pages if p["page_number"] == page_number), None)
+        if not target_page:
+            raise HTTPException(status_code=404, detail=f"Page {page_number} not found in document")
+
+        return {
+            "document_id": doc.id,
+            "filename": doc.filename,
+            "page_number": page_number,
+            "total_pages": doc.total_pages,
+            "text": target_page["text"],
+            "char_count": target_page["char_count"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract page: {str(e)}")
+
+
+@router.get("/{document_id}/file")
+def stream_document_pdf(
+    document_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Streams PDF directly to client with inline header for browser PDF page navigation (#page=X).
+    """
+    doc = check_document_access(document_id, current_user, db, required_permission="view")
+    if not os.path.exists(doc.file_path):
+        raise HTTPException(status_code=404, detail="PDF file not found on disk")
+
+    return FileResponse(
+        path=doc.file_path,
+        media_type="application/pdf",
+        filename=doc.filename,
+        headers={"Content-Disposition": f'inline; filename="{doc.filename}"'}
+    )
+
+
 @router.delete("/{document_id}")
 def delete_document(
     document_id: str,

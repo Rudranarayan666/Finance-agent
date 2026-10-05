@@ -1,13 +1,25 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from backend.app.config import settings
 
-connect_args = {"check_same_thread": False} if "sqlite" in settings.DATABASE_URL else {}
-engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
 
+def _create_db_engine():
+    db_url = settings.DATABASE_URL
+    try:
+        connect_args = {"check_same_thread": False} if "sqlite" in db_url else {}
+        eng = create_engine(db_url, connect_args=connect_args, pool_pre_ping=True)
+        with eng.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return eng
+    except Exception as err:
+        print(f"Database connection note: falling back to local SQLite due to remote connection status ({err})")
+        fallback_url = "sqlite:///./finance_agent.db"
+        return create_engine(fallback_url, connect_args={"check_same_thread": False}, pool_pre_ping=True)
+
+
+engine = _create_db_engine()
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
 Base = declarative_base()
 
 
@@ -23,8 +35,12 @@ def migrate_schema():
     """
     Safely adds missing columns/tables in SQLite without needing external migration tools.
     """
+    db_url_str = str(engine.url)
+    if "sqlite" not in db_url_str:
+        return
+
     import sqlite3
-    db_path = settings.DATABASE_URL.replace("sqlite:///", "")
+    db_path = db_url_str.replace("sqlite:///", "")
     if not os.path.exists(db_path):
         return
 
@@ -50,6 +66,12 @@ def migrate_schema():
         if "is_org_shared" not in doc_cols:
             cur.execute("ALTER TABLE documents ADD COLUMN is_org_shared BOOLEAN DEFAULT 0;")
 
+        # Check audit_logs table columns
+        cur.execute("PRAGMA table_info(audit_logs);")
+        audit_cols = [c[1] for c in cur.fetchall()]
+        if "organization_id" not in audit_cols:
+            cur.execute("ALTER TABLE audit_logs ADD COLUMN organization_id VARCHAR;")
+
         conn.commit()
         conn.close()
     except Exception as e:
@@ -67,7 +89,6 @@ def seed_default_users_and_samples():
 
     db = SessionLocal()
     try:
-        # 1. Seed or retrieve default Organization
         org = db.query(Organization).first()
         if not org:
             org = Organization(
@@ -106,7 +127,6 @@ def seed_default_users_and_samples():
                 if not u.last_active:
                     u.last_active = datetime.utcnow()
 
-        # Update existing documents with organization_id if missing
         docs = db.query(Document).filter(Document.organization_id.is_(None)).all()
         for d in docs:
             d.organization_id = org.id
@@ -119,9 +139,6 @@ def seed_default_users_and_samples():
 
 
 def preindex_existing_documents():
-    """
-    Pre-indexes all existing completed documents into rag_service on server boot.
-    """
     from backend.app.models.models import Document
     from backend.app.parser.pdf_parser import PDFDocumentParser
     from backend.app.rag.rag_service import rag_service
@@ -144,7 +161,10 @@ def preindex_existing_documents():
 
 
 def init_db():
-    from backend.app.models.models import Organization, User, Document, DocumentAccess, AnalysisRecord, AuditLog
+    from backend.app.models.models import (
+        Organization, User, Invitation, Document, DocumentAccess,
+        DocumentChunk, Metric, AnalysisRecord, ChatSession, ChatMessage, AuditLog
+    )
     Base.metadata.create_all(bind=engine)
     migrate_schema()
     seed_default_users_and_samples()

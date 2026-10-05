@@ -44,8 +44,16 @@ def check_document_access(document_id: str, current_user: User, db: Session, req
     doc = db.query(Document).filter(Document.id == document_id).first()
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
+
+    # Strict Multi-Tenant Organization Boundary Check
+    if doc.organization_id and current_user.organization_id:
+        if doc.organization_id != current_user.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. Document belongs to another organization."
+            )
         
-    # Admin has access to all documents
+    # Admin within the same organization has full access
     if current_user.role == "admin":
         return doc
         
@@ -53,13 +61,9 @@ def check_document_access(document_id: str, current_user: User, db: Session, req
     if doc.uploaded_by_id == current_user.id:
         return doc
 
-    # Org-wide Viewer Access check
-    if doc.is_org_shared:
-        if current_user.organization_id and doc.organization_id:
-            if doc.organization_id == current_user.organization_id and required_permission == "view":
-                return doc
-        elif required_permission == "view":
-            return doc
+    # Org-wide Shared Access check
+    if doc.is_org_shared and required_permission == "view":
+        return doc
         
     # Check shared access table
     access = db.query(DocumentAccess).filter(

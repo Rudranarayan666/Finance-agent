@@ -29,7 +29,6 @@ const METRIC_LABELS = {
   key_risk_factors: { name: 'Key Risk Factors', icon: AlertTriangle, description: 'Top operational and market risks' },
 };
 
-// Trend and mini sparkline calculator
 function getTrendData(field, chartData) {
   if (!chartData) {
     return { direction: 'up', pct: '+4.2%', points: '0,12 16,8 32,10 48,3' };
@@ -49,7 +48,6 @@ function getTrendData(field, chartData) {
     const change = prev !== 0 ? ((last - prev) / Math.abs(prev)) * 100 : 0;
     const isUp = change >= 0;
 
-    // Normalize 4 points to SVG coordinates within 50x16 box
     const minVal = Math.min(...series);
     const maxVal = Math.max(...series);
     const range = maxVal - minVal || 1;
@@ -69,7 +67,6 @@ function getTrendData(field, chartData) {
     };
   }
 
-  // Sensible default mini sparkline pattern
   if (field === 'key_risk_factors' || field === 'forward_guidance') {
     return null;
   }
@@ -83,61 +80,36 @@ export default function MetricsGrid({ metrics = [], onInspectCitation, companyNa
     setExpandedField(expandedField === field ? null : field);
   };
 
-  // Fixed min-width, single-line, right-aligned badges with recolored neutral amber for Low Conf.
   const getConfidenceBadge = (confidence, status) => {
-    const baseClass = "inline-flex items-center justify-center shrink-0 w-[86px] min-w-[86px] h-5 rounded-full text-[10px] font-semibold whitespace-nowrap leading-none transition";
-
     if (status === 'NOT_DISCLOSED' || confidence === 'not_disclosed') {
-      return (
-        <span className={`${baseClass} bg-slate-800 text-slate-400 border border-slate-700`}>
-          Not Disclosed
-        </span>
-      );
+      return <span className="neo-badge text-xs bg-zinc-100 text-zinc-700">NOT DISCLOSED</span>;
     }
     if (status === 'AMBIGUOUS') {
-      return (
-        <span className={`${baseClass} bg-amber-500/15 text-amber-300 border border-amber-500/40`}>
-          Ambiguous
-        </span>
-      );
+      return <span className="neo-badge text-xs bg-amber-200 text-black">AMBIGUOUS</span>;
     }
     if (confidence === 'high') {
-      return (
-        <span className={`${baseClass} bg-emerald-500/15 text-emerald-300 border border-emerald-500/40`}>
-          <CheckCircle2 className="w-2.5 h-2.5 mr-1 text-emerald-400" /> High Conf.
-        </span>
-      );
+      return <span className="neo-badge-green text-xs"><CheckCircle2 className="w-3 h-3 stroke-[3]" /> HIGH CONF</span>;
     }
     if (confidence === 'medium') {
-      return (
-        <span className={`${baseClass} bg-sky-500/15 text-sky-300 border border-sky-500/40`}>
-          Med Conf.
-        </span>
-      );
+      return <span className="neo-badge-blue text-xs">MED CONF</span>;
     }
-    // Neutral amber for low confidence
-    return (
-      <span className={`${baseClass} bg-amber-500/15 text-amber-300 border border-amber-500/40`}>
-        <AlertCircle className="w-2.5 h-2.5 mr-1 text-amber-400" /> Low Conf.
-      </span>
-    );
+    return <span className="neo-badge text-xs bg-amber-200 text-black"><AlertCircle className="w-3 h-3 stroke-[3]" /> LOW CONF</span>;
   };
 
   return (
-    <div className="space-y-3.5">
-      <div className="flex items-center justify-between">
+    <div className="space-y-3 font-mono text-zinc-950">
+      <div className="flex items-center justify-between pb-2 border-b-2 border-black">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-white flex items-center space-x-2">
-            <span>8 Key Financial Metrics</span>
+          <h2 className="text-base sm:text-lg font-black text-black uppercase tracking-wider">
+            8 STANDARDIZED FINANCIAL SCORECARDS
           </h2>
-          <p className="text-xs text-slate-400">
-            Click any metric card to inspect verbatim quotes and exact page citations
+          <p className="text-xs text-zinc-800 font-sans font-medium">
+            Click scorecard to inspect verbatim PDF substring matches and page citations
           </p>
         </div>
       </div>
 
-      {/* Responsive Grid: strictly 2 columns on mobile, 4 columns on desktop */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {metrics.map((metric) => {
           const meta = METRIC_LABELS[metric.field] || { name: metric.field, icon: HelpCircle, description: '' };
           const Icon = meta.icon;
@@ -149,68 +121,58 @@ export default function MetricsGrid({ metrics = [], onInspectCitation, companyNa
             <div
               key={metric.field}
               onClick={() => toggleExpand(metric.field)}
-              className={`rounded-2xl p-4 sm:p-5 transition-all duration-150 cursor-pointer flex flex-col justify-between group ${
-                isExpanded
-                  ? 'border-emerald-500 bg-[#162032] shadow-lg ring-1 ring-emerald-500'
-                  : !isDisclosed
-                  ? 'opacity-70 hover:opacity-100 bg-[#0e1422] border border-slate-800 hover:border-slate-700'
-                  : 'bg-[#111827] border border-slate-700/80 hover:border-slate-600 hover:bg-[#162032] shadow-sm'
+              className={`neo-card bg-white cursor-pointer flex flex-col justify-between transition-all ${
+                isExpanded ? 'border-black shadow-[5px_5px_0px_0px_#FFE600] bg-[#FFFDE7]' : 'hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_#FFE600]'
               }`}
             >
               <div>
-                {/* 1. Standard Header: Icon + Title on left, Fixed Single-line Badge on right */}
-                <div className="flex items-center justify-between gap-1.5 h-7">
-                  <div className="flex items-center space-x-2 min-w-0 pr-1">
-                    <div className={`p-1.5 rounded-lg border flex-shrink-0 transition ${
-                      !isDisclosed 
-                        ? 'bg-slate-900 text-slate-500 border-slate-800' 
-                        : 'bg-slate-800 text-emerald-400 border-slate-700 group-hover:border-emerald-500/40'
-                    }`}>
-                      <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                {/* Header */}
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center space-x-1.5 truncate">
+                    <div className="w-6 h-6 bg-[#FFE600] text-black border border-black flex items-center justify-center font-bold">
+                      <Icon className="w-3.5 h-3.5 stroke-[3]" />
                     </div>
-                    <span className="text-xs sm:text-sm font-bold text-white truncate" title={meta.name}>
+                    <span className="text-xs font-black text-black uppercase truncate" title={meta.name}>
                       {meta.name}
                     </span>
                   </div>
-                  <div className="flex-shrink-0">
+                  <div>
                     {getConfidenceBadge(metric.confidence, metric.status)}
                   </div>
                 </div>
 
-                {/* 2. Standard Value Block (consistent height across all cards) */}
-                <div className="mt-3.5 min-h-[54px] flex flex-col justify-center">
+                {/* Value Block */}
+                <div className="mt-3 my-1.5">
                   <div className={`text-xl sm:text-2xl font-black tracking-tight line-clamp-1 ${
-                    isDisclosed ? 'text-white' : 'text-slate-500 text-sm italic font-normal'
+                    isDisclosed ? 'text-black' : 'text-zinc-600 text-xs italic font-bold'
                   }`}>
                     {isDisclosed ? metric.value : 'Not Disclosed'}
                   </div>
-
-                  <div className="h-4 flex items-center justify-between text-[11px] sm:text-xs text-slate-300 font-mono mt-0.5">
-                    <span className="truncate">{metric.unit || (isDisclosed ? 'Reported figure' : '—')}</span>
+                  <div className="text-xs text-zinc-700 font-mono mt-0.5 truncate font-bold">
+                    {metric.unit || (isDisclosed ? 'Reported figure' : '—')}
                   </div>
                 </div>
 
-                {/* 3. 4-Quarter Sparkline & Trend Indicator */}
+                {/* Sparkline & YoY Trend */}
                 {trend && (
-                  <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono">
-                    <div className="flex items-center space-x-1.5">
+                  <div className="mt-2 pt-1.5 border-t border-zinc-200 flex items-center justify-between text-xs">
+                    <div className="flex items-center space-x-1 font-black">
                       {trend.direction === 'up' ? (
-                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                        <TrendingUp className="w-3 h-3 text-green-700 stroke-[3]" />
                       ) : (
-                        <TrendingDown className="w-3.5 h-3.5 text-amber-400" />
+                        <TrendingDown className="w-3 h-3 text-amber-700 stroke-[3]" />
                       )}
-                      <span className={trend.direction === 'up' ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                      <span className={trend.direction === 'up' ? 'text-green-800' : 'text-amber-800'}>
                         {trend.pct}
                       </span>
-                      <span className="text-slate-400 hidden xs:inline">4Q</span>
+                      <span className="text-zinc-700 text-xs font-bold">4Q</span>
                     </div>
 
-                    {/* Mini SVG Sparkline */}
-                    <svg className="w-12 h-3.5 overflow-visible" viewBox="0 0 50 16">
+                    <svg className="w-10 h-3.5 overflow-visible" viewBox="0 0 50 16">
                       <polyline
                         fill="none"
-                        stroke={trend.direction === 'up' ? '#10b981' : '#f59e0b'}
-                        strokeWidth="1.75"
+                        stroke="#000"
+                        strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         points={trend.points}
@@ -220,85 +182,65 @@ export default function MetricsGrid({ metrics = [], onInspectCitation, companyNa
                 )}
               </div>
 
-              {/* 4. Standard Footer Row: Citation page / Method + Inspect Trigger */}
-              <div className="mt-3 pt-2.5 border-t border-slate-800 flex items-center justify-between text-xs text-slate-300 h-6">
-                <span className="truncate pr-1">
+              {/* Card Footer */}
+              <div className="mt-3 pt-2 border-t border-black flex items-center justify-between text-xs">
+                <span className="truncate">
                   {metric.extraction_method === 'computed' ? (
-                    <span className="text-teal-300 flex items-center font-mono font-medium">
-                      <Calculator className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                      <span className="truncate">Computed</span>
+                    <span className="text-blue-900 font-black flex items-center text-xs">
+                      <Calculator className="w-3.5 h-3.5 mr-1 stroke-[2.5]" />
+                      <span>COMPUTED</span>
                     </span>
                   ) : metric.source?.page ? (
-                    <span className="flex items-center font-mono text-emerald-400 font-medium">
-                      <BookOpen className="w-3.5 h-3.5 mr-1 flex-shrink-0" />
-                      <span className="truncate">Page {metric.source.page}</span>
+                    <span className="text-black font-black flex items-center text-xs">
+                      <BookOpen className="w-3.5 h-3.5 mr-1 stroke-[2.5]" />
+                      <span>PAGE {metric.source.page}</span>
                     </span>
                   ) : (
-                    <span className="text-slate-500">No citation</span>
+                    <span className="text-zinc-600 font-bold text-xs">No Citation</span>
                   )}
                 </span>
 
-                <div className="flex items-center space-x-1.5 flex-shrink-0">
-                  {metric.source?.quote && onInspectCitation && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onInspectCitation({
-                          title: meta.name,
-                          field: metric.field,
-                          value: metric.value,
-                          unit: metric.unit,
-                          page: metric.source.page,
-                          quote: metric.source.quote,
-                          confidence: metric.confidence,
-                          method: metric.extraction_method,
-                          formula: metric.arithmetic_formula,
-                          company: companyName
-                        });
-                      }}
-                      className="px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-emerald-400 hover:text-emerald-300 font-medium text-[11px] transition flex items-center space-x-1 border border-slate-700"
-                      title="Inspect Citation"
-                    >
-                      <span>Inspect</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </button>
-                  )}
-
-                  <span className="text-slate-500 group-hover:text-slate-300 transition">
-                    {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onInspectCitation && metric.source) {
+                      onInspectCitation({
+                        title: meta.name,
+                        field: metric.field,
+                        value: metric.value,
+                        unit: metric.unit,
+                        page: metric.source?.page || 1,
+                        quote: metric.source?.quote || 'Extracted from filing statement',
+                        confidence: metric.confidence,
+                        method: metric.extraction_method,
+                        formula: metric.formula_used,
+                        company: companyName
+                      });
+                    }
+                  }}
+                  className="neo-badge-yellow text-[9px] py-0 px-1.5 cursor-pointer flex items-center gap-0.5"
+                >
+                  <span>INSPECT</span>
+                  <ExternalLink className="w-2.5 h-2.5 stroke-[2.5]" />
+                </button>
               </div>
 
-              {/* 5. Expandable Panel (Detailed description & calculation formula) */}
+              {/* Expandable details */}
               {isExpanded && (
-                <div 
-                  className="mt-3 pt-3 border-t border-slate-800 text-xs space-y-2 text-slate-200"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {metric.source?.quote ? (
-                    <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-700 font-mono text-xs text-slate-200">
-                      <div className="text-emerald-400 font-bold mb-1">
-                        Verifiable Excerpt (Page {metric.source.page}):
-                      </div>
-                      <p className="italic leading-relaxed text-emerald-200/90">"{metric.source.quote}"</p>
-                    </div>
-                  ) : (
-                    <div className="p-2 rounded-xl bg-slate-950/60 text-slate-400 text-xs italic">
-                      No verbatim quote available.
+                <div className="mt-2.5 pt-2 border-t border-black text-[10px] space-y-1 bg-yellow-50 p-2 border border-black animate-in fade-in">
+                  {metric.source?.quote && (
+                    <div>
+                      <span className="font-bold text-black uppercase">Verbatim Source:</span>
+                      <p className="italic text-zinc-700 mt-0.5 line-clamp-3">"{metric.source.quote}"</p>
                     </div>
                   )}
-
-                  {metric.calculation_details && (
-                    <div className="p-2.5 rounded-xl bg-slate-950 border border-teal-800/40 text-xs text-teal-300 font-mono">
-                      <strong>Formula:</strong> {metric.calculation_details}
+                  {metric.formula_used && (
+                    <div className="pt-1">
+                      <span className="font-bold text-black uppercase">Calculation:</span>
+                      <p className="font-mono text-blue-950 mt-0.5">{metric.formula_used}</p>
                     </div>
                   )}
-
-                  <div className="text-[11px] text-slate-400 flex items-center justify-between font-mono pt-1">
-                    <span>Method: <strong className="text-slate-200">{metric.extraction_method}</strong></span>
-                    <span>Status: <strong className="text-slate-200">{metric.status}</strong></span>
-                  </div>
                 </div>
               )}
             </div>

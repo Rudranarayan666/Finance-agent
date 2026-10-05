@@ -27,7 +27,6 @@ export default function ExplainableAiShap({ shapData, companyName }) {
 
   const { target_metric, net_result, features, summary } = shapData;
 
-  // Build waterfall data structure with running total accumulation
   const baseline = 100;
   let running = baseline;
 
@@ -40,7 +39,7 @@ export default function ExplainableAiShap({ shapData, companyName }) {
       displayVal: baseline,
       runningTotal: baseline,
       isTotal: true,
-      color: '#64748b',
+      color: '#CBD5E1',
       description: 'Starting baseline net earnings'
     }
   ];
@@ -56,57 +55,60 @@ export default function ExplainableAiShap({ shapData, companyName }) {
         displayVal: diff,
         runningTotal: running + diff,
         isPositive: true,
-        color: '#10b981',
+        color: '#FFE600',
         description: feat.description
       };
       running += diff;
       waterfallData.push(step);
     } else {
-      running += diff;
+      const absDiff = Math.abs(diff);
       const step = {
         name: feat.feature.length > 14 ? feat.feature.slice(0, 12) + '…' : feat.feature,
         fullName: feat.feature,
-        base: running,
-        val: Math.abs(diff),
+        base: running - absDiff,
+        val: absDiff,
         displayVal: diff,
-        runningTotal: running,
+        runningTotal: running - absDiff,
         isPositive: false,
-        color: '#f59e0b',
+        color: '#F87171',
         description: feat.description
       };
+      running -= absDiff;
       waterfallData.push(step);
     }
   });
 
   waterfallData.push({
-    name: 'Net Profit',
-    fullName: net_result || 'Reported Net Profit',
+    name: 'Final PAT',
+    fullName: target_metric || 'Reported Net Profit',
     base: 0,
     val: running,
     displayVal: running,
     runningTotal: running,
     isTotal: true,
-    color: '#06b6d4',
-    description: 'Final reported net earnings after all driver attributions'
+    color: '#93C5FD',
+    description: `Final verified ${target_metric || 'Net Profit'} figure`
   });
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-[#090d16] border border-slate-700 rounded-xl p-3 shadow-2xl text-xs space-y-1 z-50 max-w-xs">
-          <div className="font-bold text-white flex items-center justify-between gap-2">
-            <span>{data.fullName}</span>
-            <span style={{ color: data.color }} className="font-mono">
-              {data.isTotal ? `${data.displayVal.toFixed(1)}%` : `${data.displayVal > 0 ? '+' : ''}${data.displayVal.toFixed(1)}%`}
-            </span>
+        <div className="neo-card bg-white p-2.5 border-2 border-black shadow-[3px_3px_0px_#000] text-xs font-mono max-w-xs">
+          <div className="font-black text-black uppercase text-[11px] mb-1">{data.fullName}</div>
+          <div className="space-y-0.5 text-zinc-700">
+            <div>
+              Impact: <strong className={data.displayVal >= 0 ? 'text-green-800' : 'text-rose-800'}>
+                {data.displayVal >= 0 ? `+${data.displayVal}` : data.displayVal}
+              </strong>
+            </div>
+            <div>Cumulative Total: <strong>{Math.round(data.runningTotal)}</strong></div>
+            {data.description && (
+              <div className="text-[10px] text-zinc-600 font-sans pt-1 border-t border-zinc-200 mt-1">
+                {data.description}
+              </div>
+            )}
           </div>
-          <div className="text-[11px] text-slate-400 font-mono">
-            Running Total: <strong className="text-slate-200">{data.runningTotal.toFixed(1)}%</strong>
-          </div>
-          <p className="text-[11px] text-slate-300 leading-snug pt-1 border-t border-slate-800">
-            {data.description}
-          </p>
         </div>
       );
     }
@@ -114,94 +116,87 @@ export default function ExplainableAiShap({ shapData, companyName }) {
   };
 
   return (
-    <div className="bg-[#111827] border border-slate-700/80 rounded-2xl p-5 sm:p-7 space-y-6 shadow-md">
+    <div className="neo-card bg-white border-3 shadow-[4px_4px_0px_0px_#000] p-4 sm:p-5 space-y-4 font-mono text-zinc-900">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-        <div className="flex items-center space-x-3">
-          <div className="p-2.5 rounded-xl bg-cyan-500/15 border border-cyan-500/30 text-cyan-400 flex-shrink-0">
-            <BrainCircuit className="w-5 h-5" />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 bg-[#FFE600] text-black border-2 border-black flex items-center justify-center font-bold">
+            <BrainCircuit className="w-4 h-4 stroke-[3]" />
           </div>
           <div>
-            <div className="flex items-center space-x-2">
-              <h2 className="text-base sm:text-lg font-bold text-white">
-                Explainable AI (SHAP) Waterfall Attribution
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                Recharts Waterfall
-              </span>
-            </div>
-            <p className="text-xs text-slate-400">
-              Cumulative Shapley waterfall decomposing step-by-step drivers from baseline to final net profit
+            <h2 className="text-sm sm:text-base font-black text-black uppercase tracking-wider">
+              EXPLAINABLE AI (SHAP) ATTRIBUTION WATERFALL
+            </h2>
+            <p className="text-[11px] text-zinc-600 font-sans">
+              Cumulative Shapley waterfall decomposing step-by-step drivers from baseline to net profit
             </p>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 self-start sm:self-auto">
-          <span className="text-xs font-mono px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-200">
-            Target: <strong className="text-emerald-400">{net_result || 'Reported Net Profit'}</strong>
+        <div className="flex items-center space-x-2">
+          <span className="neo-badge bg-[#F4F4F5] text-black">
+            TARGET: <strong className="text-black ml-1">{net_result || 'Reported Net Profit'}</strong>
           </span>
         </div>
       </div>
 
       {/* Summary Banner */}
       {summary && (
-        <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 text-xs sm:text-sm text-slate-200 flex items-start space-x-2.5">
-          <Info className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-          <p className="leading-relaxed">{summary}</p>
+        <div className="p-3 bg-[#FFFDE7] border-2 border-black text-xs text-zinc-900 flex items-start space-x-2.5">
+          <Info className="w-4 h-4 text-black flex-shrink-0 mt-0.5 stroke-[2.5]" />
+          <p className="leading-relaxed font-sans">{summary}</p>
         </div>
       )}
 
-      {/* Recharts Waterfall Chart with ResponsiveContainer */}
+      {/* Recharts Waterfall Chart */}
       <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs font-mono uppercase text-slate-300">
-          <span className="flex items-center space-x-1.5 font-semibold">
-            <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Cumulative Waterfall Trajectory</span>
+        <div className="flex items-center justify-between text-[11px] uppercase text-zinc-700 border-b border-zinc-200 pb-1.5 font-black">
+          <span className="flex items-center space-x-1">
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>CUMULATIVE WATERFALL TRAJECTORY</span>
           </span>
-          <div className="flex items-center space-x-3 text-xs">
+          <div className="flex items-center space-x-3 text-[10px]">
             <span className="flex items-center space-x-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500 inline-block" />
-              <span className="text-slate-200">Positive Driver</span>
+              <span className="w-2.5 h-2.5 bg-[#FFE600] border border-black inline-block" />
+              <span>POSITIVE DRIVER</span>
             </span>
             <span className="flex items-center space-x-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-amber-500 inline-block" />
-              <span className="text-slate-200">Headwind</span>
+              <span className="w-2.5 h-2.5 bg-[#F87171] border border-black inline-block" />
+              <span>HEADWIND</span>
             </span>
             <span className="flex items-center space-x-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-cyan-500 inline-block" />
-              <span className="text-slate-200">Net Profit</span>
+              <span className="w-2.5 h-2.5 bg-[#93C5FD] border border-black inline-block" />
+              <span>NET PROFIT</span>
             </span>
           </div>
         </div>
 
-        <div className="w-full h-72 sm:h-80 bg-[#0e1422] border border-slate-700/80 rounded-2xl p-3 pt-5">
+        <div className="w-full h-72 sm:h-80 bg-[#FBFBFA] border-2 border-black p-3">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={waterfallData}
               margin={{ top: 10, right: 10, left: -20, bottom: 20 }}
             >
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#E4E4E7" vertical={false} />
               <XAxis
                 dataKey="name"
-                stroke="#cbd5e1"
-                fontSize={11}
+                stroke="#000"
+                fontSize={10}
                 tickLine={false}
                 interval={0}
                 angle={-15}
                 textAnchor="end"
               />
               <YAxis
-                stroke="#cbd5e1"
-                fontSize={11}
+                stroke="#000"
+                fontSize={10}
                 tickLine={false}
                 domain={['auto', 'auto']}
               />
               <Tooltip content={<CustomTooltip />} />
-              {/* Invisible base bar to create floating waterfall effect */}
               <Bar dataKey="base" stackId="waterfall" fill="transparent" />
-              {/* Visible incremental bar */}
-              <Bar dataKey="val" stackId="waterfall" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="val" stackId="waterfall" stroke="#000" strokeWidth={1.5}>
                 {waterfallData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
@@ -211,57 +206,29 @@ export default function ExplainableAiShap({ shapData, companyName }) {
         </div>
       </div>
 
-      {/* Driver breakdown cards */}
-      <div className="space-y-3 pt-2">
-        <h3 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold flex items-center space-x-1.5">
-          <BrainCircuit className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Driver Attribution Cards ({features.length})</span>
-        </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {features.map((feat, idx) => {
-            const isPos = feat.shap_value >= 0;
-            return (
-              <div
-                key={idx}
-                className="p-4 rounded-xl bg-[#0e1422] border border-slate-700/80 hover:border-slate-600 transition flex items-start justify-between gap-3 shadow-sm"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs sm:text-sm font-bold text-white">
-                      {feat.feature}
-                    </span>
-                    <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
-                      isPos ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
-                    }`}>
-                      {isPos ? `+${feat.shap_value.toFixed(1)}%` : `${feat.shap_value.toFixed(1)}%`}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {feat.description}
-                  </p>
-                </div>
-
-                <div className="flex-shrink-0 mt-0.5">
-                  {isPos ? (
-                    <TrendingUp className="w-4 h-4 text-emerald-400" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 text-amber-400" />
-                  )}
-                </div>
+      {/* Feature Attribution Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+        {features.map((feat, idx) => {
+          const isPositive = feat.shap_value >= 0;
+          return (
+            <div
+              key={idx}
+              className="p-2.5 border-2 border-black bg-[#FBFBFA] text-xs space-y-1 hover:bg-[#FFF9C4]/40 transition"
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-black text-black uppercase truncate text-[11px]" title={feat.feature}>
+                  {feat.feature}
+                </span>
+                <span className={`neo-badge text-[9px] py-0 ${isPositive ? 'bg-[#BBF7D0]' : 'bg-[#FECACA]'}`}>
+                  {isPositive ? `+${feat.shap_value}` : feat.shap_value}
+                </span>
               </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Methodology note */}
-      <div className="pt-2 border-t border-slate-800 text-[11px] text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-        <span className="flex items-center space-x-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Additive SHAP feature contributions calculated against previous fiscal baseline.</span>
-        </span>
-        <span className="font-mono text-slate-500">Audit Verified</span>
+              <p className="text-[10px] text-zinc-600 font-sans line-clamp-2">
+                {feat.description}
+              </p>
+            </div>
+          );
+        })}
       </div>
 
     </div>

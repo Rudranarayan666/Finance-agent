@@ -6,12 +6,14 @@ import {
   Sparkles, 
   AlertCircle, 
   CheckCircle2, 
-  Shield, 
+  ShieldCheck, 
   Building2,
   Eye,
   EyeOff,
   ArrowRight,
-  Info
+  Info,
+  Zap,
+  UserCheck
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { api } from '../services/api';
@@ -23,61 +25,82 @@ export default function LoginPage({ onLoginSuccess }) {
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [forgotMsg, setForgotMsg] = useState(null);
+  const [mode, setMode] = useState('login'); // 'login' or 'register'
+  const [fullName, setFullName] = useState('');
+  const [selectedRole, setSelectedRole] = useState('analyst');
 
-  // Email/Password login handler
-  const handleEmailSubmit = async (e) => {
+  const isAdminEmail = email.toLowerCase().includes('admin');
+
+  const handleAuthSubmit = async (e) => {
     if (e) e.preventDefault();
     setError(null);
     setForgotMsg(null);
 
-    if (!email.trim() || !password) {
-      setError('Please enter both corporate email and password.');
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes('@') || !cleanEmail.includes('.')) {
+      setError('Please provide a valid corporate email address.');
+      return;
+    }
+
+    if (!password || password.length < 6) {
+      setError('Password must contain at least 6 characters.');
       return;
     }
 
     setIsLoading(true);
     try {
-      const res = await api.login(email.trim(), password);
-      setIsLoading(false);
-
-      try {
-        confetti({ particleCount: 60, spread: 55, origin: { y: 0.65 } });
-      } catch (e) {}
-
-      if (onLoginSuccess) {
-        onLoginSuccess(res.user);
+      if (mode === 'login') {
+        const res = await api.login(cleanEmail, password);
+        setIsLoading(false);
+        try {
+          confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+        } catch (e) {}
+        if (onLoginSuccess) {
+          onLoginSuccess(res.user);
+        }
+      } else {
+        // Register flow
+        const finalRole = cleanEmail.includes('admin') ? 'admin' : selectedRole;
+        await api.register(cleanEmail, password, fullName || cleanEmail.split('@')[0], finalRole);
+        // Instant login after registration
+        const res = await api.login(cleanEmail, password);
+        setIsLoading(false);
+        try {
+          confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
+        } catch (e) {}
+        if (onLoginSuccess) {
+          onLoginSuccess(res.user);
+        }
       }
     } catch (err) {
       setIsLoading(false);
-      setError(err.message || 'Authentication failed. Please check credentials.');
+      setError(err.message || 'Authentication failed. Please verify your email and password.');
     }
   };
 
-  // Google OAuth flow handler
-  const handleGoogleSignIn = async (presetRole = 'analyst') => {
+  const handleGoogleSignIn = async (role = 'analyst') => {
     setError(null);
     setForgotMsg(null);
     setIsLoading(true);
 
     try {
-      // Authenticates with backend /auth/google endpoint
-      const googleEmail = presetRole === 'admin' 
+      const gEmail = role === 'admin' 
         ? 'admin.google@finance.corp' 
-        : presetRole === 'viewer'
+        : role === 'viewer'
         ? 'investor.google@finance.corp'
         : 'analyst.google@finance.corp';
 
-      const googleName = presetRole === 'admin'
-        ? 'Google Admin Partner'
-        : presetRole === 'viewer'
-        ? 'Google Institutional Investor'
-        : 'Google Equity Analyst';
+      const gName = role === 'admin'
+        ? 'Google Workspace Admin'
+        : role === 'viewer'
+        ? 'Google Institutional Viewer'
+        : 'Google Senior Analyst';
 
-      const res = await api.googleLogin(googleEmail, googleName, presetRole);
+      const res = await api.googleLogin(gEmail, gName, role);
       setIsLoading(false);
 
       try {
-        confetti({ particleCount: 60, spread: 55, origin: { y: 0.65 } });
+        confetti({ particleCount: 50, spread: 50, origin: { y: 0.6 } });
       } catch (e) {}
 
       if (onLoginSuccess) {
@@ -89,224 +112,244 @@ export default function LoginPage({ onLoginSuccess }) {
     }
   };
 
-  // Quick preset loader
-  const handlePresetSelect = (roleType) => {
+  const handlePresetSelect = (roleKey) => {
     setError(null);
     setForgotMsg(null);
-    if (roleType === 'admin') {
+    if (roleKey === 'admin') {
       setEmail('admin@finance.corp');
       setPassword('AdminPass123!');
-    } else if (roleType === 'analyst') {
+      setSelectedRole('admin');
+    } else if (roleKey === 'analyst') {
       setEmail('analyst@finance.corp');
       setPassword('AnalystPass123!');
+      setSelectedRole('analyst');
     } else {
       setEmail('viewer@finance.corp');
       setPassword('ViewerPass123!');
+      setSelectedRole('viewer');
     }
   };
 
-  const handleForgotPassword = (e) => {
-    e.preventDefault();
-    setForgotMsg(
-      `Password reset instructions dispatched for ${email || 'your account'}. Please contact your corporate security administrator if you do not receive it.`
-    );
-  };
-
   return (
-    <div className="min-h-screen bg-[#070a12] flex flex-col items-center justify-center p-4 sm:p-6 text-slate-100 relative selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen bg-[#FBFBFA] flex flex-col items-center justify-center p-4 font-mono text-zinc-900">
       
-      {/* Background ambient accents */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
-      {/* Main Centered Auth Card */}
-      <div className="w-full max-w-md bg-[#0e1424] border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl relative z-10 space-y-6">
+      {/* Light Neo-Brutalism Login Box */}
+      <div className="w-full max-w-md bg-white border-3 border-black shadow-[6px_6px_0px_0px_#000000] p-6 sm:p-7 space-y-5 relative">
         
-        {/* Brand Header */}
-        <div className="text-center space-y-2">
-          <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-600 to-cyan-700 flex items-center justify-center shadow-xl shadow-emerald-950/60">
-            <Sparkles className="w-6 h-6 text-white" />
+        {/* Header */}
+        <div className="border-b-2 border-black pb-4 text-center space-y-1.5">
+          <div className="w-10 h-10 bg-[#FFE600] border-2 border-black shadow-[2px_2px_0px_0px_#000] mx-auto flex items-center justify-center">
+            <Sparkles className="w-5 h-5 text-black stroke-[2.5]" />
           </div>
-          <div>
-            <h1 className="text-2xl font-black text-white tracking-tight">FinanceAgent</h1>
-            <p className="text-xs text-slate-400 font-medium">Enterprise Financial Intelligence • RBAC Portal</p>
-          </div>
+          <h1 className="text-xl font-black text-black tracking-tight uppercase">
+            FINANCEAGENT PORTAL
+          </h1>
+          <p className="text-[11px] text-zinc-600 font-sans">
+            Enterprise RBAC Authentication &bull; Verifiable Financial Audit
+          </p>
         </div>
 
-        {/* 1. Continue with Google OAuth Button */}
-        <div className="space-y-2">
+        {/* Google OAuth Button */}
+        <button
+          type="button"
+          onClick={() => handleGoogleSignIn(selectedRole)}
+          disabled={isLoading}
+          className="neo-button-secondary w-full justify-center py-2.5 bg-white hover:bg-zinc-50 border-2 border-black font-extrabold shadow-[3px_3px_0px_0px_#000000]"
+        >
+          <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          <span>CONTINUE WITH GOOGLE WORKSPACE</span>
+        </button>
+
+        <div className="flex items-center gap-2">
+          <div className="h-[2px] bg-black flex-1" />
+          <span className="text-[10px] font-black uppercase text-zinc-500">OR CORPORATE CREDENTIALS</span>
+          <div className="h-[2px] bg-black flex-1" />
+        </div>
+
+        {/* Tab toggle: Sign In vs Sign Up */}
+        <div className="grid grid-cols-2 gap-1 bg-zinc-100 p-1 border-2 border-black">
           <button
             type="button"
-            onClick={() => handleGoogleSignIn('analyst')}
-            disabled={isLoading}
-            className="w-full py-3 px-4 rounded-xl bg-slate-900/90 hover:bg-slate-850 hover:border-slate-600 border border-slate-700/80 text-white text-xs font-semibold flex items-center justify-center space-x-3 transition shadow-md group disabled:opacity-50"
+            onClick={() => setMode('login')}
+            className={`py-1.5 text-xs font-bold uppercase transition ${
+              mode === 'login'
+                ? 'bg-[#FFE600] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                : 'text-zinc-600 hover:text-black'
+            }`}
           >
-            {/* Google Multi-Color G Icon */}
-            <svg className="w-4 h-4" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.99 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-              />
-            </svg>
-            <span>Continue with Google Workspace</span>
+            SIGN IN
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode('register')}
+            className={`py-1.5 text-xs font-bold uppercase transition ${
+              mode === 'register'
+                ? 'bg-[#FFE600] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]'
+                : 'text-zinc-600 hover:text-black'
+            }`}
+          >
+            CREATE ACCOUNT
           </button>
         </div>
 
-        {/* Divider */}
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-slate-800 w-full" />
-          <span className="bg-[#0e1424] px-3 text-[11px] font-mono text-slate-500 whitespace-nowrap uppercase">
-            or continue with corporate email
-          </span>
-          <div className="border-t border-slate-800 w-full" />
-        </div>
+        {/* Admin Detection Indicator */}
+        {isAdminEmail && (
+          <div className="p-2.5 bg-[#FFF9C4] border-2 border-black text-xs space-y-1 animate-in fade-in">
+            <div className="font-black text-black flex items-center gap-1.5 uppercase text-[11px]">
+              <ShieldCheck className="w-4 h-4 text-black stroke-[2.5]" />
+              <span>ADMIN ACCESS DETECTED:</span>
+            </div>
+            <p className="text-[10px] text-zinc-700 font-sans">
+              Email contains "admin" &bull; Site-wide administrative clearance, user provisioning &amp; audit oversight enabled.
+            </p>
+          </div>
+        )}
 
-        {/* Feedback / Error Alerts */}
+        {/* Alerts */}
         {error && (
-          <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-300 text-xs flex items-center space-x-2 animate-in fade-in">
-            <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
-            <span>{error}</span>
+          <div className="p-2.5 bg-[#FEE2E2] border-2 border-black text-xs text-rose-900 flex items-start space-x-2 animate-in fade-in">
+            <AlertCircle className="w-4 h-4 text-rose-700 shrink-0 mt-0.5" />
+            <span className="font-sans font-semibold text-[11px]">{error}</span>
           </div>
         )}
 
         {forgotMsg && (
-          <div className="p-3 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-300 text-xs flex items-center space-x-2 animate-in fade-in">
-            <Info className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span>{forgotMsg}</span>
+          <div className="p-2.5 bg-[#E0F2FE] border-2 border-black text-xs text-blue-900 flex items-start space-x-2 animate-in fade-in">
+            <Info className="w-4 h-4 text-blue-700 shrink-0 mt-0.5" />
+            <span className="font-sans font-semibold text-[11px]">{forgotMsg}</span>
           </div>
         )}
 
-        {/* 2. Email & Password Form */}
-        <form onSubmit={handleEmailSubmit} className="space-y-3.5">
+        {/* Credentials Form */}
+        <form onSubmit={handleAuthSubmit} className="space-y-3">
+          {mode === 'register' && (
+            <div>
+              <label className="block text-[10px] font-black uppercase text-black mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="Jane Analyst"
+                className="neo-input"
+              />
+            </div>
+          )}
+
           <div>
-            <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1">
-              Corporate Email
+            <label className="block text-[10px] font-black uppercase text-black mb-1">
+              Corporate Email (use "admin" for Root Access)
             </label>
             <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="analyst@finance.corp"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="neo-input"
               />
             </div>
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[11px] font-mono uppercase tracking-wider text-slate-400">
+              <label className="text-[10px] font-black uppercase text-black">
                 Password
               </label>
-              <button
-                type="button"
-                onClick={handleForgotPassword}
-                className="text-[11px] text-emerald-400 hover:text-emerald-300 transition"
-              >
-                Forgot password?
-              </button>
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={() => setForgotMsg(`Password recovery instructions dispatched to ${email || 'your email'}.`)}
+                  className="text-[10px] text-zinc-600 hover:text-black underline font-bold"
+                >
+                  Forgot password?
+                </button>
+              )}
             </div>
             <div className="relative">
-              <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-10 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition"
+                className="neo-input pr-10"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-black"
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               </button>
             </div>
           </div>
 
+          {mode === 'register' && (
+            <div>
+              <label className="block text-[10px] font-black uppercase text-black mb-1">
+                Requested Role Tier
+              </label>
+              <select
+                value={selectedRole}
+                onChange={(e) => setSelectedRole(e.target.value)}
+                className="neo-input cursor-pointer"
+              >
+                <option value="analyst">Analyst (RAG, Extraction, DuckDB)</option>
+                <option value="admin">Admin (Full Control, Audits, All Docs)</option>
+                <option value="viewer">Viewer (Read-Only Access)</option>
+              </select>
+            </div>
+          )}
+
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold tracking-wide transition shadow-xl shadow-emerald-950 flex items-center justify-center space-x-2 mt-2"
+            className="neo-button-primary w-full justify-center py-2.5 text-xs font-black shadow-[3px_3px_0px_0px_#000000] mt-1"
           >
-            <span>{isLoading ? 'Authenticating...' : 'Sign In to Workspace'}</span>
-            <ArrowRight className="w-4 h-4" />
+            {isLoading ? 'VERIFYING CREDENTIALS...' : mode === 'login' ? 'SIGN IN WITH CREDENTIALS' : 'CREATE ACCOUNT & ENTER'}
           </button>
         </form>
 
-        {/* 3. One-Click Demo Role Presets */}
-        <div className="pt-3 border-t border-slate-800 space-y-2">
-          <div className="text-[10px] font-mono uppercase text-slate-400 flex items-center justify-between">
-            <span>Instant Role Evaluation:</span>
-            <span className="text-emerald-400 font-bold">Auto-Seeded</span>
+        {/* 1-Click Demo Evaluation Presets */}
+        <div className="pt-3 border-t-2 border-black space-y-2">
+          <div className="text-[10px] font-black uppercase text-zinc-500 text-center tracking-wider">
+            1-CLICK EVALUATION PRESETS:
           </div>
-
           <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => handlePresetSelect('analyst')}
-              className={`p-2 rounded-xl text-xs font-bold border transition flex flex-col items-center ${
-                email.includes('analyst')
-                  ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300 shadow-md'
-                  : 'bg-slate-950 hover:bg-slate-900 border-slate-800 text-slate-300'
-              }`}
+              onClick={() => handlePresetSelect('admin')}
+              className="neo-button-secondary text-[11px] py-1.5 justify-center bg-[#FFF9C4] hover:bg-[#FFE600] font-black"
             >
-              <span>Analyst</span>
-              <span className="text-[9px] font-normal text-slate-400">Upload + AI</span>
+              ADMIN
             </button>
-
             <button
               type="button"
-              onClick={() => handlePresetSelect('admin')}
-              className={`p-2 rounded-xl text-xs font-bold border transition flex flex-col items-center ${
-                email.includes('admin')
-                  ? 'bg-purple-600/20 border-purple-500 text-purple-300 shadow-md'
-                  : 'bg-slate-950 hover:bg-slate-900 border-slate-800 text-slate-300'
-              }`}
+              onClick={() => handlePresetSelect('analyst')}
+              className="neo-button-secondary text-[11px] py-1.5 justify-center bg-[#E0F2FE] hover:bg-[#BAE6FD] font-black"
             >
-              <span>Admin</span>
-              <span className="text-[9px] font-normal text-slate-400">Users + Audit</span>
+              ANALYST
             </button>
-
             <button
               type="button"
               onClick={() => handlePresetSelect('viewer')}
-              className={`p-2 rounded-xl text-xs font-bold border transition flex flex-col items-center ${
-                email.includes('viewer')
-                  ? 'bg-sky-600/20 border-sky-500 text-sky-300 shadow-md'
-                  : 'bg-slate-950 hover:bg-slate-900 border-slate-800 text-slate-300'
-              }`}
+              className="neo-button-secondary text-[11px] py-1.5 justify-center bg-[#F4F4F5] hover:bg-zinc-200 font-black"
             >
-              <span>Viewer</span>
-              <span className="text-[9px] font-normal text-slate-400">Shared Only</span>
+              VIEWER
             </button>
           </div>
         </div>
 
-        {/* Security & Org Footer */}
-        <div className="text-[10px] text-slate-500 text-center font-mono flex items-center justify-center space-x-1.5 pt-1">
-          <Building2 className="w-3 h-3 text-emerald-500" />
-          <span>FinanceCorp Global • SOC2 Type II Certified</span>
-        </div>
-
       </div>
-
     </div>
   );
 }

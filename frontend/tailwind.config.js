@@ -23,10 +23,22 @@ export default {
           hover: '#1e293b'
         }
       },
+      borderWidth: {
+        '3': '3px',
+      },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
-      }
+        mono: ['JetBrains Mono', 'Courier New', 'monospace'],
+      },
+      animation: {
+        'in': 'fadeIn 0.15s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
     },
   },
   plugins: [],

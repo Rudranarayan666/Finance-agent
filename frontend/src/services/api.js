@@ -129,6 +129,32 @@ class ApiService {
     });
   }
 
+  // DuckDB Analytics & SQL
+  async queryDuckDB(docId, query) {
+    return this.request(`/analyze/${docId}/duckdb/query`, {
+      method: 'POST',
+      body: JSON.stringify({ query })
+    });
+  }
+
+  async getDuckDBAnalytics(docId) {
+    return this.request(`/analyze/${docId}/duckdb/analytics`);
+  }
+
+  // Page inspection & PDF stream
+  async getDocumentPage(docId, pageNumber) {
+    return this.request(`/documents/${docId}/page/${pageNumber}`);
+  }
+
+  getDocumentPdfUrl(docId) {
+    return `${API_BASE}/documents/${docId}/file`;
+  }
+
+  // Chatbot Security Feed for Admin
+  async getSecurityChatFeed() {
+    return this.request('/chat/security/feed');
+  }
+
   // Admin
   async listUsers() {
     return this.request('/admin/users');
@@ -158,3 +184,4 @@ class ApiService {
 }
 
 export const api = new ApiService();
+

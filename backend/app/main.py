@@ -5,7 +5,7 @@ import logging
 
 from backend.app.config import settings
 from backend.app.database import init_db
-from backend.app.api import health, auth, documents, analysis, admin
+from backend.app.api import health, auth, documents, analysis, admin, chat
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("finance_agent")
@@ -40,6 +40,7 @@ app.include_router(health.router)
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents.router, prefix=settings.API_V1_PREFIX)
 app.include_router(analysis.router, prefix=settings.API_V1_PREFIX)
+app.include_router(chat.router, prefix=settings.API_V1_PREFIX)
 app.include_router(admin.router, prefix=settings.API_V1_PREFIX)
 
 

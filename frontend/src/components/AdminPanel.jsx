@@ -12,29 +12,34 @@ import {
   X,
   Mail,
   UserCheck,
-  FileText
+  FileText,
+  Lock,
+  MessageSquare,
+  ShieldCheck,
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 import { api } from '../services/api';
 
 export default function AdminPanel() {
   const [users, setUsers] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [activeAdminTab, setActiveAdminTab] = useState('users');
+  const [securityFeed, setSecurityFeed] = useState([]);
+  const [activeAdminTab, setActiveAdminTab] = useState('users'); // 'users', 'security', 'logs'
   const [isLoading, setIsLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
 
-  // Invite Teammate Modal state
+  // Invite Modal
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('analyst');
   const [inviteName, setInviteName] = useState('');
   const [isInviting, setIsInviting] = useState(false);
 
-  // Audit Logs Filter State
+  // Filters
   const [filterAction, setFilterAction] = useState('');
   const [filterEmail, setFilterEmail] = useState('');
-  const [filterDocId, setFilterDocId] = useState('');
 
   const fetchUsers = async () => {
     try {
@@ -45,14 +50,22 @@ export default function AdminPanel() {
     }
   };
 
+  const fetchSecurityFeed = async () => {
+    try {
+      const feed = await api.getSecurityChatFeed();
+      setSecurityFeed(feed);
+    } catch (err) {
+      console.error('Failed to fetch security feed:', err);
+    }
+  };
+
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
       const logs = await api.getAuditLogs({
         limit: 100,
         action: filterAction,
-        userEmail: filterEmail,
-        documentId: filterDocId
+        userEmail: filterEmail
       });
       setAuditLogs(logs);
     } catch (err) {
@@ -65,6 +78,7 @@ export default function AdminPanel() {
   useEffect(() => {
     fetchUsers();
     fetchLogs();
+    fetchSecurityFeed();
   }, []);
 
   const handleRoleChange = async (userId, newRole) => {
@@ -88,7 +102,7 @@ export default function AdminPanel() {
     setErrorMsg(null);
     try {
       await api.inviteUser(inviteEmail.trim(), inviteRole, inviteName.trim() || null);
-      setSuccessMsg(`Invitation sent to ${inviteEmail} (${inviteRole})`);
+      setSuccessMsg(`Invitation dispatched to ${inviteEmail} (${inviteRole})`);
       setTimeout(() => setSuccessMsg(null), 3500);
       setIsInviteModalOpen(false);
       setInviteEmail('');
@@ -97,160 +111,241 @@ export default function AdminPanel() {
       fetchUsers();
       fetchLogs();
     } catch (err) {
-      setErrorMsg(err.message || 'Failed to send teammate invite');
+      setErrorMsg(err.message || 'Failed to send invite');
     } finally {
       setIsInviting(false);
     }
   };
 
-  const handleApplyLogFilters = (e) => {
-    e.preventDefault();
-    fetchLogs();
-  };
-
-  const handleResetLogFilters = () => {
-    setFilterAction('');
-    setFilterEmail('');
-    setFilterDocId('');
-    api.getAuditLogs({ limit: 100 }).then(setAuditLogs);
-  };
-
-  const formatLastActive = (dateStr) => {
-    if (!dateStr) return 'Just now';
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diffMins = Math.floor((now - d) / (1000 * 60));
-    if (diffMins < 2) return 'Active now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return d.toLocaleDateString();
-  };
-
   return (
-    <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-7 space-y-6 shadow-2xl">
+    <div className="neo-card bg-white border-3 shadow-[4px_4px_0px_0px_#000000] p-4 sm:p-6 space-y-5 font-mono text-zinc-900">
       
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b-2 border-black pb-3.5">
         <div>
           <div className="flex items-center space-x-2">
-            <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center space-x-2">
-              <Shield className="w-5 h-5 text-purple-400" />
-              <span>Enterprise Admin & Security Control</span>
+            <h2 className="text-sm sm:text-base font-black text-black uppercase flex items-center space-x-2">
+              <Shield className="w-4 h-4 stroke-[3]" />
+              <span>ADMINISTRATIVE GOVERNANCE &amp; SECURITY CONTROLS</span>
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono bg-purple-500/15 text-purple-300 border border-purple-500/30">
-              Org Scope: {users[0]?.organization_name || 'FinanceCorp Global'}
-            </span>
+            <span className="neo-badge-yellow text-xs">ROOT ACCESS</span>
           </div>
-          <p className="text-xs text-slate-400">
-            Organization member provisioning, inline role assignments, and immutable audit logs
+          <p className="text-xs sm:text-sm text-zinc-800 font-sans font-medium mt-0.5">
+            Role-Based Access Management, Google Workspace Identity Tracking &amp; Chatbot Security Feed
           </p>
         </div>
 
         {/* Tab Controls */}
-        <div className="flex items-center space-x-1.5 bg-slate-950 p-1 rounded-2xl border border-slate-800 self-start sm:self-auto">
-          <button
-            onClick={() => setActiveAdminTab('users')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 ${
-              activeAdminTab === 'users'
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-950'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Users className="w-3.5 h-3.5" />
-            <span>Org Members ({users.length})</span>
-          </button>
+        <div className="flex items-center space-x-1.5">
+          <div className="flex items-center space-x-1 bg-[#F4F4F5] p-1 border-2 border-black">
+            <button
+              onClick={() => setActiveAdminTab('users')}
+              className={`px-3 py-1 text-xs font-black uppercase transition cursor-pointer ${
+                activeAdminTab === 'users'
+                  ? 'bg-[#FFE600] text-black border border-black shadow-[1px_1px_0px_0px_#000]'
+                  : 'text-zinc-800 hover:text-black hover:bg-white'
+              }`}
+            >
+              USERS ({users.length})
+            </button>
+            <button
+              onClick={() => { setActiveAdminTab('security'); fetchSecurityFeed(); }}
+              className={`px-3 py-1 text-xs font-black uppercase transition cursor-pointer ${
+                activeAdminTab === 'security'
+                  ? 'bg-[#FFE600] text-black border border-black shadow-[1px_1px_0px_0px_#000]'
+                  : 'text-zinc-800 hover:text-black hover:bg-white'
+              }`}
+            >
+              CHATBOT AUDIT ({securityFeed.length})
+            </button>
+            <button
+              onClick={() => setActiveAdminTab('logs')}
+              className={`px-3 py-1 text-xs font-black uppercase transition cursor-pointer ${
+                activeAdminTab === 'logs'
+                  ? 'bg-[#FFE600] text-black border border-black shadow-[1px_1px_0px_0px_#000]'
+                  : 'text-zinc-800 hover:text-black hover:bg-white'
+              }`}
+            >
+              SYSTEM LOGS
+            </button>
+          </div>
 
           <button
-            onClick={() => setActiveAdminTab('logs')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5 ${
-              activeAdminTab === 'logs'
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-950'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
+            onClick={() => setIsInviteModalOpen(true)}
+            className="neo-button-primary text-xs sm:text-sm py-1 px-3"
           >
-            <Clock className="w-3.5 h-3.5" />
-            <span>Audit Log ({auditLogs.length})</span>
+            <UserPlus className="w-3.5 h-3.5 stroke-[2.5]" />
+            <span>INVITE</span>
           </button>
         </div>
       </div>
 
-      {/* Notifications */}
+      {/* Alerts */}
       {successMsg && (
-        <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs rounded-xl flex items-center space-x-2 animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{successMsg}</span>
+        <div className="p-2.5 bg-[#DCFCE7] border-2 border-black text-green-950 text-xs sm:text-sm flex items-center space-x-2">
+          <CheckCircle2 className="w-4 h-4 text-green-700 shrink-0 stroke-[3]" />
+          <span className="font-sans font-bold">{successMsg}</span>
         </div>
       )}
-
       {errorMsg && (
-        <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-300 text-xs rounded-xl flex items-center space-x-2 animate-in fade-in">
-          <X className="w-4 h-4 text-red-400 shrink-0" />
-          <span>{errorMsg}</span>
+        <div className="p-2.5 bg-[#FEE2E2] border-2 border-black text-rose-950 text-xs sm:text-sm flex items-center space-x-2">
+          <AlertTriangle className="w-4 h-4 text-rose-700 shrink-0 stroke-[3]" />
+          <span className="font-sans font-bold">{errorMsg}</span>
         </div>
       )}
 
-      {/* TAB 1: USERS MANAGEMENT */}
+      {/* TAB 1: USERS DIRECTORY */}
       {activeAdminTab === 'users' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-xs text-slate-400 font-mono">
-              Organization Membership Roster
-            </span>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-black text-black uppercase">
+            <span>Corporate User Directory</span>
+            <span className="neo-badge text-xs bg-zinc-100 text-black">3 ACCESS TIERS ENFORCED</span>
+          </div>
+
+          <div className="overflow-x-auto border-2 border-black bg-white">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr>
+                  <th className="neo-table-header">USER / CORPORATE EMAIL</th>
+                  <th className="neo-table-header">AUTH PROVIDER</th>
+                  <th className="neo-table-header">CURRENT ROLE</th>
+                  <th className="neo-table-header">ORGANIZATION</th>
+                  <th className="neo-table-header text-right">MODIFY CLEARANCE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => {
+                  const isAdminUser = u.role === 'admin';
+                  const isAnalystUser = u.role === 'analyst';
+                  return (
+                    <tr key={u.id} className="hover:bg-yellow-50/50">
+                      <td className="neo-table-cell">
+                        <div className="font-black text-black text-sm">{u.full_name || 'Corporate User'}</div>
+                        <div className="text-xs text-zinc-800 font-sans font-medium">{u.email}</div>
+                      </td>
+                      <td className="neo-table-cell">
+                        <span className={`neo-badge text-xs py-0 ${
+                          u.provider === 'google' ? 'bg-[#BAE6FD] text-black' : 'bg-[#F4F4F5] text-zinc-900'
+                        }`}>
+                          {u.provider === 'google' ? 'GOOGLE WORKSPACE' : 'LOCAL CREDENTIALS'}
+                        </span>
+                      </td>
+                      <td className="neo-table-cell">
+                        <span className={`neo-badge text-xs py-0.5 ${
+                          isAdminUser ? 'bg-[#FFE600] text-black font-black' : isAnalystUser ? 'bg-[#BAE6FD] text-black font-bold' : 'bg-zinc-200 text-zinc-900'
+                        }`}>
+                          {u.role.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="neo-table-cell text-xs sm:text-sm font-sans font-semibold text-black">
+                        {u.organization_name || 'FinanceCorp Global'}
+                      </td>
+                      <td className="neo-table-cell text-right">
+                        <select
+                          value={u.role}
+                          onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                          className="neo-input text-xs sm:text-sm py-1 px-2 w-auto cursor-pointer border-2 border-black inline-block font-black"
+                        >
+                          <option value="admin">ADMIN (Root)</option>
+                          <option value="analyst">ANALYST (Full RAG)</option>
+                          <option value="viewer">VIEWER (Read-Only)</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: CHATBOT SECURITY FEED */}
+      {activeAdminTab === 'security' && (
+        <div className="space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-black text-black uppercase">
+            <span>Live Chatbot Telemetry &amp; Google Source Audit</span>
             <button
-              onClick={() => setIsInviteModalOpen(true)}
-              className="px-3.5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1.5 shadow-md shadow-purple-950 self-start sm:self-auto"
+              onClick={fetchSecurityFeed}
+              className="neo-button-secondary text-xs py-1 px-2.5"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>Invite Teammate</span>
+              REFRESH FEED
             </button>
           </div>
 
-          <div className="overflow-x-auto rounded-2xl border border-slate-700/80">
-            <table className="w-full text-left text-xs text-slate-200">
-              <thead className="bg-[#0e1422] text-slate-300 uppercase font-mono text-xs border-b border-slate-700">
+          <div className="space-y-2">
+            {securityFeed.length === 0 ? (
+              <div className="p-6 bg-zinc-50 border-2 border-black text-center text-xs sm:text-sm text-zinc-700 font-bold">
+                No chatbot security queries recorded yet. Questions asked by Analysts or Admins will stream here with full Google/Local source attribution.
+              </div>
+            ) : (
+              securityFeed.map((item, idx) => (
+                <div key={idx} className="p-3 bg-[#FBFBFA] border-2 border-black space-y-1.5 text-xs sm:text-sm hover:border-black">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 border-b border-zinc-200 pb-1">
+                    <div className="flex items-center space-x-2">
+                      <span className="font-black text-black">{item.user_email || 'anonymous'}</span>
+                      <span className={`neo-badge text-xs py-0 ${
+                        item.details?.provider === 'google' ? 'bg-[#BAE6FD] text-black' : 'bg-zinc-100 text-black'
+                      }`}>
+                        AUTH: {item.details?.provider === 'google' ? 'GOOGLE WORKSPACE' : 'LOCAL'}
+                      </span>
+                      <span className="neo-badge-yellow text-xs py-0">
+                        {item.details?.role?.toUpperCase() || 'USER'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-zinc-800 font-sans font-bold">{item.timestamp?.replace('T', ' ').slice(0, 19)}</span>
+                  </div>
+
+                  <div className="space-y-0.5">
+                    <div className="text-xs sm:text-sm font-sans font-semibold text-black">
+                      <strong className="font-mono text-xs text-zinc-800 uppercase font-black">Question: </strong>
+                      "{item.details?.question || 'N/A'}"
+                    </div>
+                    {item.details?.citation_pages && (
+                      <div className="text-xs text-zinc-800 font-mono font-bold">
+                        Citations Retrieved: Pages [{item.details.citation_pages.join(', ')}]
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB 3: AUDIT LOGS */}
+      {activeAdminTab === 'logs' && (
+        <div className="space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between text-xs sm:text-sm font-black text-black uppercase">
+            <span>Cryptographic Security &amp; Access Log Trail</span>
+            <span className="neo-badge text-xs bg-zinc-100 text-black">SHA-256 IMMUTABLE</span>
+          </div>
+
+          <div className="overflow-x-auto border-2 border-black max-h-96 bg-white">
+            <table className="w-full text-left border-collapse">
+              <thead>
                 <tr>
-                  <th className="py-3.5 px-4 font-semibold">Member Name</th>
-                  <th className="py-3.5 px-4 font-semibold">Corporate Email</th>
-                  <th className="py-3.5 px-4 font-semibold">Role Assignment</th>
-                  <th className="py-3.5 px-4 font-semibold">Provider</th>
-                  <th className="py-3.5 px-4 font-semibold">Last Active</th>
+                  <th className="neo-table-header">TIMESTAMP</th>
+                  <th className="neo-table-header">ACTION</th>
+                  <th className="neo-table-header">OPERATOR</th>
+                  <th className="neo-table-header">DETAILS</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800 bg-[#111827]">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-slate-800/50 transition">
-                    <td className="py-3.5 px-4 font-semibold text-white">
-                      <div className="flex items-center space-x-2.5">
-                        <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-xs text-purple-400 font-bold border border-slate-700">
-                          {u.full_name?.slice(0, 2).toUpperCase() || 'U'}
-                        </div>
-                        <span>{u.full_name}</span>
-                      </div>
+              <tbody>
+                {auditLogs.map((log) => (
+                  <tr key={log.id} className="hover:bg-yellow-50/50">
+                    <td className="neo-table-cell text-xs whitespace-nowrap font-bold text-black">
+                      {log.timestamp?.replace('T', ' ').slice(0, 19)}
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-slate-300">{u.email}</td>
-                    <td className="py-3.5 px-4">
-                      <select
-                        value={u.role}
-                        onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                        className="bg-[#0e1422] border border-slate-700 text-slate-100 rounded-lg px-2.5 py-1 text-xs focus:border-purple-500 focus:outline-none cursor-pointer"
-                      >
-                        <option value="admin">Admin</option>
-                        <option value="analyst">Analyst</option>
-                        <option value="viewer">Viewer</option>
-                      </select>
+                    <td className="neo-table-cell text-xs font-black uppercase text-black">
+                      {log.action}
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-medium ${
-                        u.provider === 'google' 
-                          ? 'bg-blue-500/20 text-blue-300 border border-blue-500/40' 
-                          : 'bg-slate-800 text-slate-300 border border-slate-700'
-                      }`}>
-                        {u.provider || 'local'}
-                      </span>
+                    <td className="neo-table-cell text-xs sm:text-sm font-sans font-semibold text-zinc-900">
+                      {log.user_email || 'System'}
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-[11px] text-slate-400">
-                      {formatLastActive(u.last_active)}
+                    <td className="neo-table-cell text-xs font-mono font-medium truncate max-w-xs text-zinc-900">
+                      {JSON.stringify(log.details || {})}
                     </td>
                   </tr>
                 ))}
@@ -260,174 +355,62 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* TAB 2: DEDICATED AUDIT LOG TAB WITH FILTERABLE CONTROLS */}
-      {activeAdminTab === 'logs' && (
-        <div className="space-y-4">
-          {/* Filter Bar */}
-          <form onSubmit={handleApplyLogFilters} className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-mono uppercase text-slate-400 flex items-center space-x-1.5">
-                <Filter className="w-3.5 h-3.5 text-purple-400" />
-                <span>Filter Compliance Events</span>
-              </span>
-              <button
-                type="button"
-                onClick={handleResetLogFilters}
-                className="text-[11px] text-slate-400 hover:text-slate-200 flex items-center space-x-1 transition font-mono"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Reset</span>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div>
-                <input
-                  type="text"
-                  placeholder="Action (e.g. upload, share, login)..."
-                  value={filterAction}
-                  onChange={(e) => setFilterAction(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div>
-                <input
-                  type="text"
-                  placeholder="User email..."
-                  value={filterEmail}
-                  onChange={(e) => setFilterEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
-                />
-              </div>
-
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Document ID..."
-                  value={filterDocId}
-                  onChange={(e) => setFilterDocId(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500"
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 flex-shrink-0"
-                >
-                  <Search className="w-3.5 h-3.5" />
-                  <span>Apply</span>
-                </button>
-              </div>
-            </div>
-          </form>
-
-          {/* Audit Logs Table */}
-          <div className="overflow-x-auto rounded-2xl border border-slate-800">
-            <table className="w-full text-left text-xs text-slate-300">
-              <thead className="bg-slate-950 text-slate-400 uppercase font-mono text-[10px] border-b border-slate-800">
-                <tr>
-                  <th className="py-3 px-4">Timestamp</th>
-                  <th className="py-3 px-4">User</th>
-                  <th className="py-3 px-4">Action</th>
-                  <th className="py-3 px-4">Document / Target</th>
-                  <th className="py-3 px-4">IP Address</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80 font-mono text-[11px]">
-                {auditLogs.length > 0 ? (
-                  auditLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-slate-800/30 transition">
-                      <td className="py-3 px-4 text-slate-400">{new Date(log.timestamp).toLocaleString()}</td>
-                      <td className="py-3 px-4 text-slate-200 font-sans font-medium">{log.user_email || 'System'}</td>
-                      <td className="py-3 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${
-                          log.action.includes('admin')
-                            ? 'bg-purple-500/20 text-purple-300 border-purple-500/30'
-                            : log.action.includes('share')
-                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30'
-                            : log.action === 'upload'
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                            : 'bg-slate-800 text-slate-300 border-slate-700'
-                        }`}>
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-slate-400 truncate max-w-[150px]">
-                        {log.document_id ? log.document_id.slice(0, 16) + '…' : '—'}
-                      </td>
-                      <td className="py-3 px-4 text-slate-500">{log.ip_address || '127.0.0.1'}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="text-center py-8 text-slate-500">
-                      No audit log records match the selected filter criteria.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       {/* Invite Teammate Modal */}
       {isInviteModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-[#0e1424] border border-slate-700 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-4 text-slate-100 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs font-mono">
+          <div className="bg-white border-3 border-black shadow-[6px_6px_0px_0px_#000000] max-w-md w-full p-5 space-y-4 relative">
             <button
               onClick={() => setIsInviteModalOpen(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-slate-200"
+              className="absolute top-4 right-4 p-1 border-2 border-black bg-zinc-100 hover:bg-[#FFE600]"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 stroke-[3]" />
             </button>
 
-            <div className="space-y-1">
-              <h3 className="text-base font-bold text-white flex items-center space-x-2">
-                <UserPlus className="w-4 h-4 text-purple-400" />
-                <span>Invite Teammate</span>
-              </h3>
-              <p className="text-xs text-slate-400">
-                Grant access to this corporate workspace under {users[0]?.organization_name || 'FinanceCorp Global'}.
-              </p>
+            <div className="border-b-2 border-black pb-2.5 space-y-1">
+              <span className="neo-badge-yellow text-[9px]">TEAM PROVISIONING</span>
+              <h3 className="text-base font-black text-black uppercase">INVITE CORPORATE MEMBER</h3>
             </div>
 
             <form onSubmit={handleInviteSubmit} className="space-y-3">
               <div>
-                <label className="block text-[11px] font-mono text-slate-400 mb-1">Corporate Email</label>
-                <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-2.5" />
-                  <input
-                    type="email"
-                    required
-                    placeholder="teammate@finance.corp"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-purple-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-mono text-slate-400 mb-1">Full Name (Optional)</label>
+                <label className="block text-[10px] font-black uppercase text-black mb-1">
+                  Full Name
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Marcus Vance"
                   value={inviteName}
                   onChange={(e) => setInviteName(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+                  placeholder="Alex Morgan"
+                  className="neo-input"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-mono text-slate-400 mb-1">Assign Role</label>
+                <label className="block text-[10px] font-black uppercase text-black mb-1">
+                  Corporate Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="alex.m@finance.corp"
+                  className="neo-input"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black uppercase text-black mb-1">
+                  Assigned Clearance Role
+                </label>
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-purple-500"
+                  className="neo-input cursor-pointer"
                 >
-                  <option value="analyst">Analyst (Upload + Extraction + AI Q&A)</option>
-                  <option value="admin">Admin (Member Management + Audit Logs)</option>
-                  <option value="viewer">Viewer (Read-Only Shared Filings)</option>
+                  <option value="analyst">Analyst (Full RAG &amp; Extraction)</option>
+                  <option value="admin">Admin (Site-Wide Clearance)</option>
+                  <option value="viewer">Viewer (Read-Only Clearance)</option>
                 </select>
               </div>
 
@@ -435,17 +418,16 @@ export default function AdminPanel() {
                 <button
                   type="button"
                   onClick={() => setIsInviteModalOpen(false)}
-                  className="px-4 py-2 text-xs text-slate-400 hover:text-slate-200"
+                  className="neo-button-secondary text-xs"
                 >
-                  Cancel
+                  CANCEL
                 </button>
                 <button
                   type="submit"
                   disabled={isInviting}
-                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition shadow-md shadow-purple-950 flex items-center space-x-1.5"
+                  className="neo-button-primary text-xs"
                 >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>{isInviting ? 'Inviting...' : 'Send Invite'}</span>
+                  {isInviting ? 'DISPATCHING...' : 'DISPATCH INVITATION'}
                 </button>
               </div>
             </form>
