@@ -204,9 +204,24 @@ erDiagram
         string sha256_hash
         string status "VERIFIED_IMMUTABLE | PROCESSING | REJECTED"
         integer page_count
+        string version "v1"
         string organization_id FK
         string uploaded_by FK
         datetime uploaded_at
+    }
+
+    EVIDENCE_RECORD {
+        string id PK
+        string document_id FK
+        integer physical_page_index
+        integer physical_page_number
+        string printed_page_label
+        string content_type "text | table | chart | image"
+        string verbatim_text
+        json table_data
+        json bounding_boxes
+        string extraction_method
+        float extraction_confidence
     }
 
     METRIC {
@@ -242,11 +257,15 @@ erDiagram
 | **Auth** | `GET` | `/api/v1/auth/me` | Fetch current user profile & organization | Authenticated |
 | **Admin** | `POST` | `/api/v1/admin/invite` | Send teammate invitation link | Admin |
 | **Admin** | `GET` | `/api/v1/admin/audit-logs` | Fetch filterable enterprise audit logs | Admin |
-| **Documents**| `POST` | `/api/v1/documents/upload` | Upload PDF, run security scan & hash seal | Analyst / Admin |
+| **Documents**| `POST` | `/api/v1/documents/upload` | Upload PDF, run security scan, multimodal extract & hash seal | Analyst / Admin |
 | **Documents**| `GET` | `/api/v1/documents` | List organization-scoped documents | All Roles |
+| **Documents**| `GET` | `/api/v1/documents/{id}/status` | Check ingestion & indexing status | All Roles |
+| **Documents**| `POST` | `/api/v1/documents/{id}/reindex` | Idempotent document reindexing trigger | Analyst / Admin |
+| **Documents**| `GET` | `/api/v1/documents/{id}/page/{num}/image` | Stream high-res (150 DPI) PNG rendered page image | All Roles |
+| **Documents**| `GET` | `/api/v1/documents/{id}/page/{num}/evidence` | Fetch layout blocks, tables, and bounding box coordinates | All Roles |
 | **Analyze** | `POST` | `/api/v1/analyze/{doc_id}` | Trigger LangGraph multi-agent analysis | Analyst / Admin |
 | **Analyze** | `GET` | `/api/v1/analyze/{doc_id}/waterfall`| Fetch Recharts SHAP waterfall payload | All Roles |
-| **Chat** | `POST` | `/api/v1/chat/{doc_id}` | Query document-scoped RAG engine | Analyst / Admin |
+| **Chat** | `POST` | `/api/v1/chat/{doc_id}` | Query hybrid multimodal RAG engine with citation validation | Analyst / Admin |
 | **Chat** | `POST` | `/api/v1/chat/attach` | Upload PDF via chat paperclip attachment | Analyst / Admin |
 
 ---
@@ -257,6 +276,7 @@ erDiagram
 | :--- | :--- | :--- |
 | **PDF Exploit Scripts** | `/JavaScript`, `/Launch` in PDF | Pre-parsing binary scanner inspects and neutralizes active script objects. |
 | **Numerical Hallucination**| LLM candidate generation | Verbatim substring matching against raw text + explicit Python `ArithmeticEngine`. |
+| **Fabricated Citations**| Generative LLM hallucination | Deterministic `CitationValidator` verifying exact physical page index, version, bounds, and quotes. |
 | **Tampering / Fraud** | Post-upload file modification | SHA-256 cryptographic seal (`VERIFIED_IMMUTABLE`) created immediately on upload. |
 | **Cross-Tenant Leakage** | Unauthorized document queries | Strict `organization_id` filtering in SQLAlchemy models and RAG index scopes. |
 | **Privilege Escalation** | Admin feature access | JWT role verification middleware (`ADMIN`, `ANALYST`, `VIEWER`). |
@@ -293,9 +313,10 @@ services:
 ## 8. Automated Verification & Quality Assurance
 
 The platform includes comprehensive automated test coverage (`pytest tests/`):
-- **14/14 Automated Tests Passing**:
-  - Security scanner magic byte & script neutralization tests.
-  - Deterministic grounding substring validation tests.
-  - Arithmetic engine margin & YoY growth verification tests.
-  - Multi-tenant RBAC & JWT authorization boundary tests.
-  - Document RAG synonym expansion retrieval tests.
+- **39/39 Automated Tests Passing (100% Pass Rate)**:
+  - **Multimodal Ingestion**: Page extraction, dimensions, bounding boxes, high-res PNG image rendering, printed page label detection (`test_multimodal_ingestion.py`).
+  - **Citation Validation**: Deterministic physical page bounds, stale version rejection, fabricated quote rejection, cross-document isolation, text-block bounding box resolution (`test_citation_validator.py`).
+  - **Hybrid Multimodal RAG**: Financial synonym expansion (PAT, EBITDA, OCF), structured table retrieval, visual/chart retrieval, RRF ranking, safe abstention gate (`test_hybrid_retrieval.py`, `test_rag_and_chat.py`).
+  - **Financial Arithmetic & Grounding**: Parenthesized negative parsing `(1,234)` -> `-1234.0`, scale multipliers (crore, lakh, thousand, million, billion, trillion), deterministic margins, reporting scope, source conflict hierarchy (`test_financial_accuracy.py`, `test_arithmetic.py`, `test_grounding.py`, `test_reconciliation.py`).
+  - **Security & RBAC**: Tenant isolation, cross-org boundary protection, role permissions, anti-malware scanner, SHA-256 hash chains (`test_rbac.py`).
+  - **End-to-End Pipeline**: Full upload -> security scan -> LangGraph supervisor -> deterministic grounding pipeline (`test_e2e_pipeline.py`, `test_database.py`).

@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { api } from '../services/api';
+import PdfSourceViewer from './PdfSourceViewer';
 
 export default function RagChat({ documentId, companyName, user, onInspectCitation, onDocumentUploaded }) {
   const [messages, setMessages] = useState([]);
@@ -24,8 +25,10 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
   const [isLoading, setIsLoading] = useState(false);
   const [isUploadingFile, setIsUploadingFile] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
-  const [activeBlockchainSeal, setActiveBlockchainSeal] = useState(null);
+  const [activeIntegrityHash, setActiveIntegrityHash] = useState(null);
   const [showSealDetails, setShowSealDetails] = useState(false);
+  const [viewerCitation, setViewerCitation] = useState(null);
+  const [viewerCitationsList, setViewerCitationsList] = useState([]);
   
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -43,7 +46,7 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
       }
     ]);
     setInputQuestion('');
-    setActiveBlockchainSeal(null);
+    setActiveIntegrityHash(null);
   }, [documentId, companyName]);
 
   const scrollToBottom = () => {
@@ -81,9 +84,9 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
       setUploadStatus('Running anti-malware script vector scanner...');
       const uploadRes = await api.uploadDocument(file);
       
-      const seal = uploadRes.blockchain_seal;
-      setActiveBlockchainSeal(seal);
-      setUploadStatus('Cryptographic SHA-256 seal verified. Initializing document analysis...');
+      const seal = uploadRes.integrity_hash || uploadRes.blockchain_seal;
+      setActiveIntegrityHash(seal);
+      setUploadStatus('SHA-256 Integrity Hash verified. Initializing document analysis...');
 
       if (onDocumentUploaded) {
         onDocumentUploaded(uploadRes);
@@ -237,16 +240,16 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
         <div className="neo-card bg-[#FBFBFA] border border-black p-2 flex items-center justify-between text-[11px] text-zinc-800">
           <div className="flex items-center space-x-2 truncate">
             <ShieldCheck className="w-3.5 h-3.5 text-black stroke-[2.5] flex-shrink-0" />
-            <span className="font-black text-black uppercase">SECURITY LEDGER:</span>
+            <span className="font-black text-black uppercase">SHA-256 INTEGRITY HASH:</span>
             <span className="truncate text-zinc-700">
-              {activeBlockchainSeal?.block_receipt || 'SHA-256 Merkle Validated &bull; Anti-Malware Checked'}
+              {activeIntegrityHash?.block_receipt || activeIntegrityHash?.receipt || 'SHA-256 Hash Chain Validated • Anti-Malware Checked'}
             </span>
           </div>
           <button
             onClick={() => setShowSealDetails(!showSealDetails)}
             className="text-[10px] font-bold text-black underline flex items-center space-x-1 flex-shrink-0 ml-2 cursor-pointer"
           >
-            <span>{showSealDetails ? 'HIDE' : 'AUDIT SEAL'}</span>
+            <span>{showSealDetails ? 'HIDE' : 'INTEGRITY DETAILS'}</span>
             {showSealDetails ? <ChevronUp className="w-3 h-3 stroke-[3]" /> : <ChevronDown className="w-3 h-3 stroke-[3]" />}
           </button>
         </div>
@@ -259,9 +262,9 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
               <span className="text-black font-extrabold bg-[#BBF7D0] px-1 border border-black text-xs">VERIFIED_IMMUTABLE</span>
             </div>
             <div className="flex justify-between truncate">
-              <span className="text-zinc-800 font-bold">SHA-256 RECEIPT:</span>
+              <span className="text-zinc-800 font-bold">SHA-256 HASH:</span>
               <span className="text-black font-bold truncate max-w-[280px] text-xs">
-                {activeBlockchainSeal?.sha256_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
+                {activeIntegrityHash?.sha256_hash || 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'}
               </span>
             </div>
           </div>
@@ -335,38 +338,57 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
                   {msg.content}
                 </div>
 
-                {/* Citations Badges with Direct Page Redirect */}
+                {/* Citations Badges with Direct Click-To-Verify Source Inspector */}
                 {msg.citations && msg.citations.length > 0 && (
-                  <div className="mt-2.5 pt-2.5 border-t border-black space-y-1.5">
-                    <div className="text-xs uppercase text-black font-black flex items-center">
-                      <BookOpen className="w-3.5 h-3.5 mr-1 stroke-[2.5]" />
-                      VERIFIABLE CITATIONS &bull; CLICK TO REDIRECT ({msg.citations.length})
+                  <div className="mt-2.5 pt-2.5 border-t border-black space-y-2">
+                    <div className="text-xs uppercase text-black font-black flex items-center justify-between">
+                      <span className="flex items-center">
+                        <BookOpen className="w-3.5 h-3.5 mr-1 stroke-[2.5]" />
+                        VERIFIED CITATIONS ({msg.citations.length})
+                      </span>
+                      {msg.verification && (
+                        <span className="neo-badge-green text-[9px] py-0">
+                          <ShieldCheck className="w-3 h-3 stroke-[3]" />
+                          DETERMINISTIC VERIFIED
+                        </span>
+                      )}
                     </div>
                     <div className="space-y-1.5">
                       {msg.citations.map((c, cIdx) => (
                         <div
-                          key={cIdx}
-                          onClick={() => handleCitationPageRedirect(c)}
-                          className="p-2 bg-[#FBFBFA] border-2 border-black text-xs font-mono hover:bg-[#FFF9C4] hover:border-black cursor-pointer transition flex items-start justify-between gap-2 group"
-                          title="Click to inspect excerpt or jump to page in PDF"
+                          key={c.citation_id || cIdx}
+                          onClick={() => {
+                            setViewerCitation(c);
+                            setViewerCitationsList(msg.citations);
+                          }}
+                          className="p-2 bg-[#FBFBFA] border-2 border-black text-xs font-mono hover:bg-[#FFF9C4] cursor-pointer transition flex items-start justify-between gap-2 group shadow-[2px_2px_0px_#000]"
+                          title="Click to open Source Verification PDF Panel"
                         >
                           <div className="space-y-0.5">
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="neo-badge-yellow text-xs py-0">
-                                {c.page_label || `PAGE ${c.page}`}
+                                PDF PAGE {c.physical_page_number || c.page}
                               </span>
-                              <span className="text-xs text-zinc-800 font-black uppercase">
-                                CONFIDENCE: {Math.round((c.score || 0.95) * 100)}%
+                              {c.printed_page_label && (
+                                <span className="text-[10px] text-zinc-600 font-bold">
+                                  (Printed: {c.printed_page_label})
+                                </span>
+                              )}
+                              <span className="neo-badge text-[9px] bg-zinc-100 py-0 uppercase">
+                                {c.content_type || 'TEXT'}
+                              </span>
+                              <span className="text-[10px] text-zinc-600 font-sans">
+                                Source: <strong>{companyName || 'Corporate Filing'}</strong>
                               </span>
                             </div>
                             <p className="italic text-zinc-900 text-xs font-sans pt-0.5 line-clamp-2">
-                              "{c.snippet}"
+                              "{c.quote || c.snippet}"
                             </p>
                           </div>
                           
                           <div className="flex items-center gap-1 flex-shrink-0 pt-0.5">
-                            <span className="neo-badge text-xs py-0.5 bg-white group-hover:bg-[#FFE600]">
-                              <span>REDIRECT</span>
+                            <span className="neo-badge-green text-xs py-0.5 group-hover:bg-[#FFE600] group-hover:text-black">
+                              <span>VERIFY SOURCE</span>
                               <ExternalLink className="w-3 h-3 stroke-[3]" />
                             </span>
                           </div>
@@ -452,6 +474,18 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
           </button>
         </form>
       </div>
+
+      {/* Interactive PDF Source Verification Inspector */}
+      {viewerCitation && (
+        <PdfSourceViewer
+          citation={viewerCitation}
+          citations={viewerCitationsList}
+          documentId={viewerCitation.document_id || documentId}
+          documentVersion={viewerCitation.document_version || 'v1'}
+          companyName={companyName}
+          onClose={() => setViewerCitation(null)}
+        />
+      )}
 
     </div>
   );

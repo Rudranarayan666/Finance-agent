@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     ANTHROPIC_API_KEY: Optional[str] = None
     GROQ_API_KEY: Optional[str] = None
+    NVIDIA_API_KEY: Optional[str] = None
+    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+    NVIDIA_MODEL: str = "meta/llama-3.2-11b-vision-instruct"
     
     # Extraction Models
     STRONG_LLM_MODEL: str = "gpt-4o"  # or claude-3-5-sonnet-20241022

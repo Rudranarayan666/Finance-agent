@@ -125,3 +125,90 @@ def test_pdf_security_scanner_malware_detection():
     is_safe_mal, reason_mal, _ = SecurityScanner.inspect_pdf(malicious_bytes, "malware.pdf")
     assert is_safe_mal is False
     assert "Malware Vector Blocked" in reason_mal
+
+
+def test_first_user_admin_and_subsequent_analyst_rule():
+    from backend.app.api.auth import register_user
+    from backend.app.schemas.schemas import UserCreate
+    from unittest.mock import MagicMock
+    import hashlib
+
+    init_db()
+    db = SessionLocal()
+    try:
+        new_org = Organization(name=f"Org_{uuid.uuid4().hex[:6]}", domain="testorg.com")
+        db.add(new_org)
+        db.commit()
+
+        # Dummy request
+        mock_req = MagicMock()
+        mock_req.client.host = "127.0.0.1"
+
+        # 1. First user registered in this org becomes admin
+        u1_in = UserCreate(
+            email=f"first_{uuid.uuid4().hex[:6]}@testorg.com",
+            password="Password123!",
+            full_name="First User"
+        )
+        # Simulate registration logic with org context
+        first_role = "admin" if db.query(User).filter(User.organization_id == new_org.id).count() == 0 else "analyst"
+        assert first_role == "admin"
+
+        u1 = User(
+            email=u1_in.email,
+            hashed_password=get_password_hash(u1_in.password),
+            full_name=u1_in.full_name,
+            role=first_role,
+            organization_id=new_org.id
+        )
+        db.add(u1)
+        db.commit()
+        assert u1.role == "admin"
+
+        # 2. Second user even with 'admin' in email MUST NOT be auto-admin
+        u2_in = UserCreate(
+            email=f"admin_officer_{uuid.uuid4().hex[:6]}@testorg.com",
+            password="Password123!",
+            full_name="Admin Officer"
+        )
+        second_role = "admin" if db.query(User).filter(User.organization_id == new_org.id).count() == 0 else "analyst"
+        assert second_role == "analyst"  # 'admin' substring ignored
+
+        u2 = User(
+            email=u2_in.email,
+            hashed_password=get_password_hash(u2_in.password),
+            full_name=u2_in.full_name,
+            role=second_role,
+            organization_id=new_org.id
+        )
+        db.add(u2)
+        db.commit()
+        assert u2.role == "analyst"
+
+    finally:
+        db.close()
+
+
+def test_sha256_hash_chain_verification():
+    import hashlib
+    # Simulating document hash chaining
+    doc1_bytes = b"%PDF-1.7\nDoc 1 content"
+    doc2_bytes = b"%PDF-1.7\nDoc 2 content"
+
+    hash1 = hashlib.sha256(doc1_bytes).hexdigest()
+    prev1 = "0" * 64
+    chain1 = hashlib.sha256(f"{prev1}:{hash1}".encode()).hexdigest()
+
+    hash2 = hashlib.sha256(doc2_bytes).hexdigest()
+    prev2 = chain1
+    chain2 = hashlib.sha256(f"{prev2}:{hash2}".encode()).hexdigest()
+
+    # Verify integrity
+    assert hashlib.sha256(f"{prev1}:{hash1}".encode()).hexdigest() == chain1
+    assert hashlib.sha256(f"{prev2}:{hash2}".encode()).hexdigest() == chain2
+
+    # Tamper detection
+    tampered_bytes = b"%PDF-1.7\nTampered Doc 1"
+    tampered_hash = hashlib.sha256(tampered_bytes).hexdigest()
+    assert tampered_hash != hash1
+

@@ -22,10 +22,16 @@ def parse_numeric_financial(value_str: Optional[str]) -> Optional[float]:
     # Multipliers
     multiplier = 1.0
     s_lower = s.lower()
-    if "billion" in s_lower or " b" in s_lower or s_lower.endswith("b"):
-        multiplier = 1000.0
-    elif "trillion" in s_lower or " t" in s_lower:
+    if "trillion" in s_lower or re.search(r'\b(t|tn)\b', s_lower):
         multiplier = 1000000.0
+    elif "billion" in s_lower or re.search(r'\b(b|bn)\b', s_lower) or s_lower.endswith("b"):
+        multiplier = 1000.0
+    elif "crore" in s_lower or re.search(r'\bcr\b', s_lower):
+        multiplier = 10.0  # Normalized to million base or relative units
+    elif "lakh" in s_lower or re.search(r'\blac\b', s_lower):
+        multiplier = 0.1
+    elif "thousand" in s_lower or re.search(r'\bk\b', s_lower) or s_lower.endswith("k"):
+        multiplier = 0.001
 
     # Extract digits, decimal points, and minus signs
     cleaned = re.sub(r'[^\d.]', '', s)
@@ -53,6 +59,34 @@ def compute_gross_margin(
     return round(gm, 2), formula
 
 
+def compute_operating_margin(
+    revenue: Optional[float],
+    operating_profit: Optional[float]
+) -> Tuple[Optional[float], Optional[str]]:
+    """
+    Deterministic calculation of operating margin % = (operating_profit / revenue) * 100
+    """
+    if revenue is None or operating_profit is None or revenue <= 0:
+        return None, None
+    om = (operating_profit / revenue) * 100.0
+    formula = f"Operating Profit ({operating_profit:,.1f}) / Revenue ({revenue:,.1f}) * 100 = {om:.2f}%"
+    return round(om, 2), formula
+
+
+def compute_net_margin(
+    revenue: Optional[float],
+    net_income: Optional[float]
+) -> Tuple[Optional[float], Optional[str]]:
+    """
+    Deterministic calculation of net margin % = (net_income / revenue) * 100
+    """
+    if revenue is None or net_income is None or revenue <= 0:
+        return None, None
+    nm = (net_income / revenue) * 100.0
+    formula = f"Net Income ({net_income:,.1f}) / Revenue ({revenue:,.1f}) * 100 = {nm:.2f}%"
+    return round(nm, 2), formula
+
+
 def compute_yoy_growth(
     current_rev: Optional[float], 
     prior_year_rev: Optional[float]
@@ -65,6 +99,18 @@ def compute_yoy_growth(
     growth = ((current_rev - prior_year_rev) / prior_year_rev) * 100.0
     formula = f"(Current ({current_rev:,.1f}) - Prior ({prior_year_rev:,.1f})) / Prior * 100 = {growth:.2f}%"
     return round(growth, 2), formula
+
+
+def detect_reporting_entity_scope(text_context: str) -> str:
+    """
+    Determines whether context refers to consolidated or standalone financial statements.
+    """
+    t_lower = text_context.lower()
+    if "consolidated" in t_lower:
+        return "consolidated"
+    if "standalone" in t_lower or "separate" in t_lower or "parent company" in t_lower:
+        return "standalone"
+    return "consolidated"  # Default in financial analysis
 
 
 def normalize_fiscal_period(period_str: Optional[str]) -> Dict[str, Any]:

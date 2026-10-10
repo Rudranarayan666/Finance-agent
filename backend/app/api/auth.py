@@ -59,16 +59,16 @@ def register_user(user_in: UserCreate, request: Request, db: Session = Depends(g
             detail="A user with this email already exists."
         )
 
-    # First user or any email containing 'admin' receives admin role
-    user_count = db.query(User).count()
-    if "admin" in clean_email or user_count == 0:
-        role = "admin"
-    else:
-        role = user_in.role.value if hasattr(user_in.role, "value") else str(user_in.role)
-
     # Assign default organization
     default_org = db.query(Organization).first()
     org_id = default_org.id if default_org else None
+
+    # First user of an organization becomes admin; all others are analyst by default
+    org_user_count = db.query(User).filter(User.organization_id == org_id).count() if org_id else db.query(User).count()
+    if org_user_count == 0:
+        role = "admin"
+    else:
+        role = user_in.role.value if hasattr(user_in.role, "value") else str(user_in.role or "analyst")
 
     new_user = User(
         email=clean_email,
@@ -104,9 +104,6 @@ def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    # If email includes 'admin', guarantee admin role
-    if "admin" in clean_email and user.role != "admin":
-        user.role = "admin"
 
     # Update last_active
     user.last_active = datetime.utcnow()
@@ -161,12 +158,14 @@ def google_oauth_login(
 
     user = db.query(User).filter(User.email == google_email).first()
     if not user:
+        org_user_count = db.query(User).filter(User.organization_id == org_id).count() if org_id else db.query(User).count()
+        assigned_role = "admin" if org_user_count == 0 else (req_body.role or "analyst")
         # Provision new Google OAuth user
         user = User(
             email=google_email,
             hashed_password=get_password_hash(os.urandom(24).hex()),
             full_name=google_name,
-            role=req_body.role or "analyst",
+            role=assigned_role,
             provider="google",
             organization_id=org_id,
             last_active=datetime.utcnow(),

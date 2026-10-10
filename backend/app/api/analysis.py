@@ -292,7 +292,10 @@ def ask_document_question(
 
     return AskQuestionResponse(
         answer=result["answer"],
+        document_id=result.get("document_id", document_id),
+        document_version=result.get("document_version", "v1"),
         citations=result["citations"],
+        verification=result.get("verification"),
         grounded=result["grounded"],
         confidence=result["confidence"]
     )

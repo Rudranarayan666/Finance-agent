@@ -7,11 +7,12 @@ from sqlalchemy.orm import Session
 
 from backend.app.config import settings
 from backend.app.database import get_db
-from backend.app.models.models import User, Document, ChatSession, ChatMessage
+from backend.app.models.models import User, Document, ChatSession, ChatMessage, EvidenceRecord
 from backend.app.auth.auth import get_current_user, check_document_access
 from backend.app.core.audit import log_audit_event
 from backend.app.core.security_scanner import SecurityScanner
 from backend.app.parser.pdf_parser import PDFDocumentParser, PDFParserError
+from backend.app.parser.document_parser import DocumentParser, DocumentParserError
 from backend.app.rag.rag_service import rag_service
 
 router = APIRouter(prefix="/chat", tags=["Grounded Chat & Attachments"])
@@ -25,7 +26,10 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     session_id: str
     answer: str
+    document_id: Optional[str] = None
+    document_version: Optional[str] = "v1"
     citations: List[dict]
+    verification: Optional[dict] = None
     grounded: bool
     confidence: float
     timestamp: str
@@ -40,7 +44,7 @@ async def attach_pdf_in_chat(
 ):
     """
     Direct in-chat paperclip attachment: uploads PDF, validates security,
-    creates SHA-256 seal, indexes for RAG chat immediately.
+    creates SHA-256 seal, creates EvidenceRecords, and indexes for RAG chat immediately.
     """
     contents = await file.read()
     is_safe, reason, blockchain_seal = SecurityScanner.inspect_pdf(contents, file.filename)
@@ -61,10 +65,12 @@ async def attach_pdf_in_chat(
         f.write(contents)
 
     try:
-        parser = PDFDocumentParser(file_path)
+        parser = DocumentParser(file_path)
         extracted = parser.extract_pages()
-        total_pages = extracted["total_pages"]
-    except PDFParserError as e:
+        total_pages = extracted.get("total_pages", 0)
+        if total_pages <= 0:
+            raise DocumentParserError("Document contains 0 pages.")
+    except (DocumentParserError, PDFParserError, Exception) as e:
         if os.path.exists(file_path):
             os.remove(file_path)
         raise HTTPException(status_code=400, detail=str(e))
@@ -75,7 +81,9 @@ async def attach_pdf_in_chat(
         file_size_bytes=file_size,
         file_hash=file_hash,
         total_pages=total_pages,
-        status="uploaded",
+        version=1,
+        document_version="v1",
+        status="ready",
         uploaded_by_id=current_user.id,
         organization_id=current_user.organization_id
     )
@@ -83,7 +91,29 @@ async def attach_pdf_in_chat(
     db.commit()
     db.refresh(new_doc)
 
-    rag_service.index_document_chunks(new_doc.id, extracted["pages"])
+    # Persist normalized evidence records for index persistence across restarts
+    for p_data in extracted.get("pages", []):
+        p_num = p_data.get("page_number", 1)
+        p_idx = p_data.get("physical_page_index", p_num - 1)
+        ev_rec = EvidenceRecord(
+            document_id=new_doc.id,
+            document_version="v1",
+            organization_id=current_user.organization_id,
+            physical_page_index=p_idx,
+            physical_page_number=p_num,
+            printed_page_label=p_data.get("printed_page_label"),
+            section_title=None,
+            content_type=p_data.get("extraction_method", "text"),
+            raw_text=p_data.get("text", ""),
+            table_data=p_data.get("tables"),
+            bounding_boxes=p_data.get("text_blocks") or p_data.get("visual_regions"),
+            extraction_method=p_data.get("extraction_method", "pymupdf"),
+            extraction_confidence=p_data.get("extraction_confidence", 1.0)
+        )
+        db.add(ev_rec)
+    db.commit()
+
+    rag_service.index_document_chunks(new_doc.id, extracted["pages"], document_version="v1")
 
     log_audit_event(
         db, action="in_chat_attach", user=current_user, document_id=new_doc.id, request=request,
@@ -192,7 +222,10 @@ def query_grounded_chat(
     return ChatResponse(
         session_id=session.id,
         answer=result["answer"],
+        document_id=result.get("document_id", document_id),
+        document_version=result.get("document_version", "v1"),
         citations=result["citations"],
+        verification=result.get("verification"),
         grounded=result["grounded"],
         confidence=result["confidence"],
         timestamp=datetime.utcnow().isoformat()

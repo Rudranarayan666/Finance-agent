@@ -147,6 +147,8 @@ class DocumentSummary(BaseModel):
     filename: str
     file_size_bytes: int
     total_pages: int
+    version: Optional[int] = 1
+    document_version: Optional[str] = "v1"
     company_name: Optional[str] = None
     fiscal_period: Optional[str] = None
     status: str
@@ -155,6 +157,9 @@ class DocumentSummary(BaseModel):
     is_org_shared: Optional[bool] = False
     organization_name: Optional[str] = None
     blockchain_seal: Optional[Dict[str, Any]] = None
+    integrity_hash: Optional[Dict[str, Any]] = None
+    prev_hash: Optional[str] = None
+    chain_hash: Optional[str] = None
 
 
 class DocumentShareRequest(BaseModel):
@@ -173,9 +178,47 @@ class AskQuestionRequest(BaseModel):
     question: str
 
 
+class CitationRegion(BaseModel):
+    x0: float
+    y0: float
+    x1: float
+    y1: float
+
+
+class CitationItem(BaseModel):
+    citation_id: str
+    document_id: str
+    document_version: str = "v1"
+    evidence_id: Optional[str] = None
+    physical_page_index: int = 0  # 0-indexed
+    physical_page_number: int = 1  # 1-indexed
+    printed_page_label: Optional[str] = None
+    content_type: str = "text"  # text, table, chart, image, ocr, financial_metric
+    quote: str = ""
+    region: Optional[CitationRegion] = None
+    verification_status: str = "verified"
+
+    # Compatibility fields for existing tests and UI
+    page: Optional[int] = None
+    page_label: Optional[str] = None
+    snippet: Optional[str] = None
+    score: Optional[float] = 1.0
+    redirect_url: Optional[str] = None
+    page_anchor: Optional[str] = None
+
+
+class VerificationReport(BaseModel):
+    citations_validated: bool = True
+    financial_values_validated: bool = True
+    warnings: List[str] = []
+
+
 class AskQuestionResponse(BaseModel):
     answer: str
+    document_id: Optional[str] = None
+    document_version: Optional[str] = "v1"
     citations: List[Dict[str, Any]] = []
+    verification: Optional[Dict[str, Any]] = None
     grounded: bool = True
     confidence: float = 1.0
 

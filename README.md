@@ -1,301 +1,223 @@
-# 🏛️ FinanceAgent: Enterprise Financial Intelligence & Agentic RAG Platform
+# 🏛️ FinanceAgent: Enterprise Financial Intelligence & Multimodal Agentic RAG Platform
 
-> **Audit-Grade Financial Intelligence with Light Neo-Brutalism UI, Deterministic Agentic RAG with Exact Page Redirect Citations, 3-Tier RBAC with Auto-Admin Rule, Live Chatbot Security Feed, In-Memory DuckDB Engine, and SHA-256 Tamper-Proof Cryptographic Seals.**
+> **Audit-Grade Financial Intelligence with Light Neo-Brutalism UI, Deterministic Agentic RAG with Exact Page Redirect Citations, Multimodal Hybrid Retrieval (BM25 Okapi + Dense Vector Space + RRF), NVIDIA NIM Grounded Synthesis, 3-Tier RBAC with Org-First Admin Governance, Live Chatbot Security Feed, In-Memory DuckDB Engine, and Cryptographic SHA-256 Integrity Hash Chains.**
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
 [![React 18](https://img.shields.io/badge/React-18.3-61dafb.svg)](https://reactjs.org/)
 [![Vite 5](https://img.shields.io/badge/Bundler-Vite%205-646CFF.svg)](https://vitejs.dev/)
 [![DuckDB](https://img.shields.io/badge/Engine-DuckDB%20Vectorized-FFF000.svg)](https://duckdb.org/)
-[![LangGraph](https://img.shields.io/badge/Orchestrator-LangGraph-orange.svg)](https://langchain-ai.github.io/langgraph/)
-[![Recharts](https://img.shields.io/badge/Charts-Recharts-22c55e.svg)](https://recharts.org/)
-[![Tests](https://img.shields.io/badge/Tests-20%2F20%20Passing%20(100%25)-brightgreen.svg)]()
+[![NVIDIA NIM](https://img.shields.io/badge/LLM-NVIDIA%20NIM%20%2F%20Llama%203.2-76B900.svg)](https://build.nvidia.com/)
+[![Pytest](https://img.shields.io/badge/Tests-52%2F52%20Passing-brightgreen.svg)]()
 [![Design](https://img.shields.io/badge/Design-Light%20Neo--Brutalism-FFE600.svg)]()
-[![Security](https://img.shields.io/badge/SOC2-Tamper--Proof%20SHA--256-emerald.svg)]()
+[![Security](https://img.shields.io/badge/Security-SOC2--Aligned%20Practices-emerald.svg)]()
 
 ---
 
 ## 📌 The Problem: Why High-Stakes Finance Breaks Generic AI
 
-Corporate earnings filings (SEC Form 10-Q, 10-K, and International Annual Reports) are dense, 80 to 250+ page PDFs filled with consolidated tables, non-GAAP reconciliations, footnotes, and regulatory disclosures. 
+Corporate earnings filings (SEC Form 10-Q, 10-K, and International Annual Reports) are dense, 80 to 250+ page PDFs filled with consolidated tables, non-GAAP reconciliations, footnotes, and regulatory disclosures.
 
 When equity research analysts, risk officers, or portfolio managers use generic AI chatbots, they face catastrophic failure modes:
 
 1. **Hallucination of Financial Figures**: Traditional LLMs frequently fabricate numbers, confuse "Operating Profit" with "Net Profit", or mix up prior-year quarters with current-period results.
 2. **Phantom Citations**: Naive chatbots cite page numbers that do not contain the reported figures, making audit verification impossible.
 3. **Context Truncation in 100–250+ Page Filings**: Critical primary financial statements (e.g., Consolidated Statement of Profit and Loss) are frequently buried on pages 150–200. Standard AI models truncate after the first 20 pages, missing the actual statements completely.
-4. **Chatbot Fluff & Uncontrolled Access**: Unbounded chatbots provide lengthy, vague essays rather than crisp, executive-ready metrics, with zero role-based security to prevent unauthorized junior staff or external viewers from extracting confidential disclosures.
-5. **Slow Analytical Processing**: Analyzing tabular financial disclosures with standard Python pandas or nested loops introduces prohibitive latency during quarterly earnings rushes.
-6. **Security & Tampering Risks**: Corporate servers risk executing malicious PDF active scripts (`/JavaScript`, `/Launch`) disguised as earnings reports without cryptographic proof of document integrity.
+4. **Restart Amnesia & Volatile State**: Typical RAG services keep in-memory indexes that disappear on process restart, making previously uploaded filings unsearchable.
+5. **Cross-Tenant Data Leakage**: Weak tenant isolation can accidentally query or cite documents uploaded by other corporate tenants.
+6. **Chatbot Fluff & Security Risks**: Unbounded chatbots provide lengthy, vague essays without role-based access control to prevent unauthorized junior staff or external viewers from extracting confidential disclosures.
 
 ---
 
-## 💡 The Solution: Deterministic Multi-Agent Financial Engine
+## 💡 The Solution: Deterministic Multi-Agent & Multimodal Hybrid RAG Engine
 
-**FinanceAgent** solves this by establishing a **zero-trust deterministic boundary** around AI extraction. Specialized agents extract candidates, but mathematical calculations, citation verifications, and conflict reconciliations happen **outside** the LLM in strict deterministic code.
+**FinanceAgent** solves this by establishing a **zero-trust deterministic boundary** around AI extraction and retrieval. Specialized agents extract candidates, but mathematical calculations, citation verifications, and conflict reconciliations happen **outside** the LLM in strict deterministic code.
 
 ```mermaid
 flowchart TD
     subgraph AUTH ["1. Enterprise Auth & Governance Layer"]
-        A[User Login / Google Workspace OAuth] --> B{Email Auto-Admin Rule & RBAC}
-        B -->|Contains 'admin' / Admin Role| C[Admin & Governance Panel + Live Security Feed]
-        B -->|Analyst Role| D[Analysis, DuckDB Console & Visualizations]
+        A[User Login / Google Workspace OAuth] --> B{Org-First Admin Rule & RBAC}
+        B -->|Admin Role| C[Admin & Governance Panel + Live Security Feed]
+        B -->|Analyst Role| D[Analysis, DuckDB Console, RAG Chat & Visualizations]
         B -->|Viewer Role| E[Read-Only Document Repository]
         B --> F[Organization Isolation: FinanceCorp Global]
     end
 
     subgraph INGESTION ["2. Ingestion & Security Validation Layer"]
-        G[User Uploads PDF] --> H[SecurityScanner]
-        H -->|Check Magic Bytes %PDF-| I{Valid PDF?}
+        G[User Uploads PDF / CSV / XLSX] --> H[SecurityScanner]
+        H -->|Check Magic Bytes %PDF-| I{Valid Document?}
         I -->|No| J[Reject: Security Alert 400]
-        I -->|Yes| K[Anti-Malware Script Vector Scan]
-        K -->|Threat Detected| L[Block Active Scripts]
-        K -->|Clean| M[SHA-256 Blockchain Integrity Seal]
-        M --> N[Extract Pages with PyMuPDF]
+        I -->|Yes| K[Anti-Malware Active Script Scan]
+        K -->|Clean| M[SHA-256 Integrity Hash & Chain]
+        M --> N[Extract Multimodal Pages with DocumentParser]
+        N --> DB[(SQLite / PostgreSQL EvidenceRecords)]
     end
 
-    subgraph MULTI_AGENT ["3. LangGraph Supervisor Multi-Agent Core"]
-        N --> O[Supervisor Orchestrator Node]
-        O --> P[Section Locator Agent]
-        P -->|Statement Density Scoring| Q[Identify Primary Statement Pages]
-        
-        Q --> R[Specialist Extraction Agents]
-        R --> S[Financial Extraction Agent]
-        R --> T[Guidance & Outlook Agent]
-        R --> U[Risk Factors Agent]
-        
-        S & T & U --> V[Deterministic Grounding Validator]
-        V -->|Verbatim Substring Match| W[Conflict Reconciliation Engine]
-        W -->|Resolve Source Priority| X[Arithmetic Engine: Margins & YoY]
-        X --> Y[Grounded Interpretation Agent]
+    subgraph RAG_CORE ["3. Multimodal Hybrid RAG & Verification Engine"]
+        N --> O[Semantic Chunking: Text, Tables, Charts]
+        O --> P[Lexical BM25 Okapi with Financial Synonyms]
+        O --> Q[Dense Vector Space Semantic Cosine Retrieval]
+        P & Q --> R[Reciprocal Rank Fusion RRF Reranking]
+        R --> S{Relevance Gate}
+        S -- "Below Threshold" --> T[Deterministic Controlled Abstention]
+        S -- "Pass" --> U[Candidate Citations with Exact BBox & Page]
+        U --> V[Deterministic CitationValidator Outside LLM]
+        V --> W[NVIDIA NIM / Llama 3.2 Grounded Synthesis]
+        W --> X[API Response with Exact Page Redirect Links]
     end
 
-    subgraph RAG_SEC ["4. Agentic RAG & Chatbot Security Guard"]
-        N --> Z[Semantic Chunking & Synonym BM25 + Dense Vectors]
-        Z --> AA[Reciprocal Rank Fusion RRF Reranker]
-        AA --> AB{Chat Access Gate}
-        AB -->|Role == Viewer| AC[Block 403 Forbidden + Log Security Alert]
-        AB -->|Role >= Analyst| AD[Concise Executive Answer + Exact Page Redirect Citations]
-        AD --> AE[Admin Real-Time Security Feed]
+    subgraph ANALYTICS ["4. Vectorized DuckDB Engine & Visualizations"]
+        N --> Y[In-Memory DuckDB Columnar Database]
+        Y --> Z[Interactive SQL Query Console]
+        Y --> AA[Recharts Visual Dashboards & Waterfall]
     end
 
-    subgraph ANALYTICS ["5. Vectorized DuckDB Engine & Visualizations"]
-        X --> AF[In-Memory DuckDB Columnar Database]
-        AF --> AG[Sub-2ms SQL Query Console]
-        AF --> AH[Recharts Visual Dashboards & SHAP Waterfall]
-    end
-
-    subgraph UI ["6. Light Neo-Brutalism Responsive Workspace"]
-        Y & AH --> AI[Metrics Grid + High-Contrast Scorecards]
-        AD --> AJ[RAG Chat + Verbatim Citation Modal with Page Jump]
-        C --> AK[Teammate Invites + Live Event Stream]
-        M --> AL[Tamper-Proof Merkle Seal Badge]
+    subgraph UI ["5. Light Neo-Brutalism Responsive Workspace"]
+        AA --> AB[Metrics Grid & High-Contrast Scorecards]
+        X --> AC[RAG Chat + Source Verification PDF Inspector]
+        C --> AD[Teammate Invites & Live Security Event Log]
+        M --> AE[SHA-256 Verified Seal Badge]
     end
 ```
 
 ---
 
-## ✨ Main Features Breakdown
+## ✨ Core Features & Technical Highlights
 
-### 🎨 1. Light Neo-Brutalism Design System
-- **High-Contrast, Tactile Aesthetic**: Engineered around a clean `#FBFBFA` canvas, high-visibility `#FFE600` canary yellow accents, `#00E599` emerald indicators, and crisp 2–3px solid black borders (`border-2 border-black`).
-- **Tactile Depth & Drop Shadows**: Hard, unblurred shadows (`shadow-[3px_3px_0px_#000]` and `shadow-[5px_5px_0px_#000]`) with micro-interaction hover lifts (`hover:-translate-y-0.5`).
-- **Ultra-Readable Typography**: Replaced low-contrast grays with jet-black typography (`text-zinc-950 font-black` and `font-bold`), enlarged data metric points (`text-2xl`), and balanced text sizes across all viewports.
-- **Dedicated Public Landing Page**: Branded hero section with live feature preview chips, architecture highlights, and instant role testing access.
+### 🔍 1. Multimodal Hybrid RAG Engine
+- **BM25 Okapi Lexical Search**: Full implementation ($k_1=1.5, b=0.75$) with Robertson-Spärck Jones IDF and domain-specific financial synonym expansion (`PAT`, `Revenue`, `Operating Cash Flow`, `EBITDA Margin`).
+- **Dense Vector Semantic Search**: Sublinear TF-IDF vector space modeling with cosine similarity over full passage corpora, running 100% offline with sub-millisecond latency.
+- **Reciprocal Rank Fusion (RRF)**: Merges lexical and dense rankings using $RRF = \frac{1}{60 + r_{\text{bm25}}} + \frac{1}{60 + r_{\text{dense}}}$.
+- **Automatic Database Hydration**: On server restart or cache eviction, queries seamlessly reconstruct in-memory indexes directly from persistent `EvidenceRecord` tables in SQLite/PostgreSQL.
+- **Strict Tenant Isolation**: Eliminates cross-tenant data leaks by enforcing single-document authorization boundaries.
+- **Safe Abstention Gate**: Gracefully abstains when evidence is insufficient, preventing confident hallucinated answers.
 
-### 🔐 2. 3-Tier Enterprise RBAC & Email Auto-Admin Promotion
-- **Three Distinct Role Tiers**:
-  - **`admin`**: Full administrative governance, teammate invitations (`/api/v1/admin/invite`), user role modifications, document deletion, unrestricted DuckDB SQL console, and live security monitoring.
-  - **`analyst`**: In-depth research privileges, multi-agent document analysis, DuckDB analytics & visualizations, executive report generation, and Agentic RAG chat.
-  - **`viewer`**: Read-only stakeholder access; restricted to viewing documents and downloading audit certificates.
-- **Automatic Admin Promotion Rule**: Any registered user or Google Workspace identity whose email address contains `"admin"` (e.g. `admin@finance.corp`, `cfo-admin@company.com`) is **automatically granted full administrative permissions** upon registration or login.
-- **Google Workspace OAuth & Local Auth**: Unified authentication gateway supporting Google OAuth (`/api/v1/auth/google`) and local JWT credentials with instant one-click demo presets.
+### 🧠 2. NVIDIA NIM Grounded Synthesis
+- Powered by NVIDIA NIM API endpoints using `meta/llama-3.2-11b-vision-instruct` (and `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`).
+- Injected with strict system directives treating document text strictly as passive data.
+- Built-in factual guard: If an external model answer omits or contradicts the verified numeric figure, the engine automatically falls back to the deterministic extracted ground truth.
 
-### 🧠 3. Agentic RAG with Exact Page Redirect Citations
-- **Multi-Tier Semantic Chunking**: Intelligently chunks 80–250+ page filings while preserving table headers, footnotes, and contextual metadata.
-- **Hybrid Search & RRF Reranking**: Combines BM25 keyword matching with financial synonym expansion (`PAT`, `EBITDA`, `Borrowings`, `Dividends`) and dense semantic embeddings, fused via **Reciprocal Rank Fusion (RRF)**.
-- **Executive Concise Mode**: Eliminates generic AI conversational filler; produces sharp, executive-ready bulleted takeaways with verifiable quantitative backing.
-- **Exact Page Number Redirect**: Every citation provides source document title, match confidence, verbatim supporting quote, and direct page URL navigation (`#page=X`, `/page/{page_number}`) that immediately opens and jumps to the cited page inside the **Citation Inspector Modal**.
+### 📑 3. Source Verification PDF Inspector
+- Badged source citations with physical page numbers, printed page labels (e.g. `Appendix-X`), content types (`text`, `table`, `chart`), and bounding box coordinates.
+- Click **"VERIFY SOURCE"** to open the interactive PDF viewer with page jump navigation (`#page=X`), rendered high-res page image, and text block highlights.
 
-### 🛡️ 4. Chatbot Security Guard & Live Admin Security Feed
-- **Viewer Role Interception**: `viewer` accounts attempting to query the AI chatbot are immediately blocked with an **HTTP 403 Forbidden** alert, safeguarding proprietary financial disclosures.
-- **Google Workspace vs. Local Identity Audit**: Tracks authentication origin (`google` vs `local`), user role, IP, and exact query payload.
-- **Live Admin Security Feed (`/api/v1/chat/security/feed`)**: Real-time event monitor inside the Admin Panel displaying all AI chatbot queries, user identities, roles, auth providers, and blocked unauthorized attempts with millisecond timestamps.
-
-### ⚡ 5. Vectorized In-Memory DuckDB Analytical Engine
-- **Sub-2ms Columnar Execution**: Executes high-speed SQL analytics on structured financial metrics in-memory (`backend/app/engine/duckdb_engine.py`) with zero external database dependencies.
-- **Interactive DuckDB SQL Console**: Embedded SQL workstation in the Visualizations tab equipped with quick-select analytical presets:
-  - *Revenue & Profit Breakdown* (`SELECT metric_name, value, unit FROM financial_metrics`)
-  - *Operating Expense Variance* (`SELECT * FROM financial_metrics WHERE metric_name LIKE '%Expense%'`)
-  - *Profitability Margins* (`SELECT metric_name, value FROM financial_metrics WHERE unit = '%'`)
-- **Interactive Recharts Dashboards**: Dynamic financial visualizations including 4-Quarter Revenue/Operating Income trends, Gross Margin comparisons, and Recharts SHAP Waterfall charts.
-
-### 🤖 6. Deterministic Multi-Agent Extraction & SHAP Waterfall
-- **LangGraph Supervisor Architecture**: Coordinates specialized worker agents (`SectionLocatorAgent`, `FinancialExtractionAgent`, `GuidanceAgent`, `RiskFactorsAgent`, `InterpretationAgent`).
-- **Statement Density Scoring**: Rapidly scans 250+ page documents to identify primary financial statement pages (P&L, Balance Sheet, Cash Flows) in under 2 seconds.
-- **Zero-Hallucination Grounding Boundary**: Mathematical derivations (margins, YoY changes) and verbatim quote matching are performed deterministically in Python—not inside LLM memory.
-- **Recharts SHAP Waterfall**: Interactive explainable AI waterfall chart breaking down net profit drivers vs. cost headwinds.
-
-### ⛓️ 7. Tamper-Proof SHA-256 Blockchain Seal & Anti-Malware
-- **Binary Exploit Defense**: Enforces strict `%PDF-1.x` magic byte validation and actively neutralizes embedded PDF executable scripts (`/JavaScript`, `/Launch`).
-- **Cryptographic Merkle Seal**: Generates a tamper-proof SHA-256 fingerprint for every uploaded filing, creating an immutable audit receipt (`VERIFIED_IMMUTABLE`).
+### 🛡️ 4. Enterprise Security & RBAC Governance
+- **3-Tier RBAC**: `admin`, `analyst`, and `viewer` roles.
+- **Google Workspace OAuth & Local Auth**: Supports corporate single sign-on with audit attribution.
+- **SHA-256 Cryptographic Hash Chain**: Verifies document immutability across uploads.
+- **Malware Scanner**: Blocks active PDF script vectors (`/JavaScript`, `/Launch`).
+- **Live Security Feed**: Streams chatbot queries, prompt injection attempts, and authorization rejections in real time for compliance inspection.
 
 ---
 
-## 📂 Project Directory Structure
+## 🛠️ Tech Stack
 
-```text
-Finance-agent/
-├── decision.md                     # Architectural Decision Record (ADR)
-├── backend/
-│   ├── app/
-│   │   ├── agents/                 # LangGraph Supervisor & Specialist Agents
-│   │   │   ├── supervisor.py            # Orchestrator & State Graph
-│   │   │   ├── section_agent.py         # Statement Density Scorer & Page Locator
-│   │   │   ├── financial_agent.py       # Core Statement Metric Extraction
-│   │   │   ├── guidance_agent.py        # Forward Guidance Extraction
-│   │   │   ├── risk_agent.py            # Operational & Market Risk Extraction
-│   │   │   └── interpretation_agent.py  # Grounded Executive Takeaways
-│   │   ├── api/                    # FastAPI REST Endpoints
-│   │   │   ├── auth.py                  # JWT Auth, User Profiles, Auto-Admin & Google OAuth
-│   │   │   ├── admin.py                 # RBAC, Teammate Invites & Filterable Audit Logs
-│   │   │   ├── documents.py             # Secure PDF Upload, Ingestion & Downloads
-│   │   │   ├── analysis.py              # Extraction Pipeline, SHAP & DuckDB Analytics
-│   │   │   └── chat.py                  # Agentic RAG Q&A, Security Guard & Live Feed
-│   │   ├── auth/                   # Password Hashing, JWT Tokens & RBAC Middleware
-│   │   ├── core/                   # SecurityScanner, Magic Bytes & LLM Fallbacks
-│   │   ├── engine/                 # Deterministic Grounding, Arithmetic & DuckDB
-│   │   │   ├── arithmetic.py            # Margin & YoY Variance Calculator
-│   │   │   ├── grounding.py             # Verbatim Substring Grounding Validator
-│   │   │   ├── reconciliation.py        # Multi-Source Conflict Resolution
-│   │   │   └── duckdb_engine.py         # Vectorized In-Memory DuckDB SQL Engine
-│   │   ├── models/                 # SQLAlchemy Models (User, Org, Document, AuditLog)
-│   │   ├── parser/                 # PyMuPDF Extractor & Semantic Chunker
-│   │   ├── rag/                    # Hybrid BM25 + Dense Vector RRF RAG Service
-│   │   │   └── rag_service.py           # Multi-Tier Retrieval & Citation Engine
-│   │   ├── schemas/                # Pydantic Request & Response Schemas
-│   │   ├── config.py               # Environment Settings
-│   │   ├── database.py             # SQLite Database & Org Seeding
-│   │   └── main.py                 # FastAPI Application Entrypoint
-│   └── requirements.txt            # Python Backend Dependencies
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── PublicLanding.jsx        # Light Neo-Brutalism Public Landing Hero
-│   │   │   ├── LoginPage.jsx            # Enterprise Sign-In with Google OAuth & Presets
-│   │   │   ├── AuthModal.jsx            # Light Neo-Brutalist Authentication Modal
-│   │   │   ├── Navbar.jsx               # Navigation Bar with Profile Dropdown & Role Chips
-│   │   │   ├── DashboardView.jsx        # Main Executive Summary & Quick Actions
-│   │   │   ├── MetricsGrid.jsx          # High-Contrast Metric Scorecards & Sparklines
-│   │   │   ├── AnalysisView.jsx         # Multi-Agent Extraction & Performance Analysis
-│   │   │   ├── Visualizations.jsx       # DuckDB SQL Console & Recharts Dashboards
-│   │   │   ├── ExplainableAiShap.jsx    # Interactive Recharts SHAP Waterfall Chart
-│   │   │   ├── RagChat.jsx              # Agentic RAG Chat with Page Redirect Citations
-│   │   │   ├── CitationModal.jsx        # Verbatim Citation Inspector with Page Navigation
-│   │   │   ├── DocumentsView.jsx        # Document Repository with SHA-256 Badges
-│   │   │   ├── UploadZone.jsx           # Drag-and-Drop PDF Upload with Magic Byte Scan
-│   │   │   ├── ReportsView.jsx          # Executive Audit Reports & Excel/PDF Export
-│   │   │   ├── TeamView.jsx             # Organization Team Members & Role Manager
-│   │   │   ├── AdminPanel.jsx           # Live Chatbot Security Feed & Audit Trails
-│   │   │   ├── AuditLogsView.jsx        # Filterable Organization Audit Logs
-│   │   │   ├── SettingsView.jsx         # Organization & Security Settings
-│   │   │   └── FinanceBackground3D.jsx  # Hero 3D Particle Constellation
-│   │   ├── services/
-│   │   │   └── api.js                   # Axios Client with Auth Interceptors & DuckDB Endpoints
-│   │   ├── App.jsx                      # Root Component with Role Guard & Route Manager
-│   │   └── index.css                    # Neo-Brutalist Design Tokens & High-Contrast Styles
-│   ├── package.json
-│   └── vite.config.js               # Vite Bundler & Reverse Proxy
-├── tests/                          # Automated Pytest Test Suite (20 Tests)
-│   ├── test_arithmetic.py          # Math Derivation & Margin Calculation Tests
-│   ├── test_database.py            # SQLite Migration & Model Relationship Tests
-│   ├── test_e2e_pipeline.py        # End-to-End PDF Ingestion & Extraction Tests
-│   ├── test_grounding.py           # Verbatim Grounding & Substring Match Tests
-│   ├── test_rag_and_chat.py        # Hybrid RAG, Chat Security & Prompt Injection Tests
-│   ├── test_rbac.py                # 3-Tier RBAC, Auto-Admin & Security Scanner Tests
-│   └── test_reconciliation.py      # Multi-Agent Conflict Resolution Tests
-└── README.md                       # Comprehensive Project Documentation
-```
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend API** | Python 3.11+, FastAPI, SQLAlchemy, Pydantic V2 |
+| **AI / Retrieval** | BM25 Okapi, Scikit-learn (TF-IDF Vector Space), LangGraph, PyMuPDF (Fitz) |
+| **LLM Provider** | NVIDIA NIM API (`meta/llama-3.2-11b-vision-instruct`), OpenAI compatible |
+| **Analytics Engine** | In-Memory DuckDB (Vectorized Columnar SQL) |
+| **Database** | SQLite (development) / Supabase PostgreSQL (production) |
+| **Frontend** | React 18, Vite 5, TailwindCSS, Lucide Icons, Recharts |
+| **Design System** | Light Neo-Brutalism (high-contrast borders, pastel tags, tactile shadows) |
+| **Testing** | Pytest (52 automated regression and unit tests) |
 
 ---
 
-## ⚡ Quick Start & Local Execution Guide
+## 🚀 Getting Started
 
-Run **FinanceAgent** locally with full functionality in a few simple steps.
-
-### 📋 Prerequisites
-- **Python**: `3.11+` (Python 3.11, 3.12, or 3.13)
-- **Node.js**: `v18+` (Node.js v20 or v22 recommended)
-- **npm**: `v9+`
+### Prerequisites
+- **Python**: 3.11 or higher
+- **Node.js**: 18.x or higher (`npm` included)
 - **Git**
 
 ---
 
-### Step 1: Environment Configuration
-
-Copy the example environment configuration to `.env`:
+### 1. Clone & Setup Repository
 
 ```bash
-# Windows (PowerShell)
-Copy-Item .env.example .env
+git clone https://github.com/<your-username>/FinanceAgent.git
+cd FinanceAgent/Finance-agent
+```
 
-# Linux / macOS / Bash
+---
+
+### 2. Configure Environment Variables
+
+Copy the example environment template:
+```bash
 cp .env.example .env
 ```
 
-*(Optional)* Configure LLM API Keys (`OPENAI_API_KEY`, `GROQ_API_KEY`, or `ANTHROPIC_API_KEY`) if connecting to external LLM providers. Built-in deterministic fallbacks operate offline without external keys.
+Configure your secrets in `.env`:
+```env
+# Project Settings
+PROJECT_NAME="Financial Report Analyzer Agent"
+ENV="development"
+DEBUG=True
+
+# Security & Auth
+SECRET_KEY="your-secure-random-secret-key-32-chars-min"
+JWT_SECRET="your-jwt-secret-key"
+JWT_ALGORITHM="HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+# Database
+DATABASE_URL="sqlite:///./finance_agent.db"
+
+# LLM Providers
+NVIDIA_API_KEY="your_nvidia_nim_api_key_here"
+NVIDIA_BASE_URL="https://integrate.api.nvidia.com/v1"
+NVIDIA_MODEL="meta/llama-3.2-11b-vision-instruct"
+
+# Optional LLMs
+OPENAI_API_KEY=""
+GROQ_API_KEY=""
+
+# Storage & Vector DB
+UPLOAD_DIR="./uploads"
+CHROMA_PERSIST_DIR="./chroma_db"
+MAX_UPLOAD_SIZE_MB=50
+DATA_RETENTION_DAYS=30
+```
+
+> 🔒 **Security Notice**: `.env` and all credential files are explicitly excluded from Git version control via `.gitignore`. Never commit API keys or passwords.
 
 ---
 
-### Step 2: Backend Setup & Execution (FastAPI)
+### 3. Backend Setup & Run
 
-1. **Open terminal in the project root**:
+1. **Create and activate a virtual environment**:
    ```bash
-   cd Finance-agent
+   python -m venv venv
+   # On Windows (PowerShell):
+   .\venv\Scripts\Activate.ps1
+   # On Linux/macOS:
+   source venv/bin/activate
    ```
 
-2. **Create and activate a virtual environment**:
-   - **Windows (PowerShell)**:
-     ```powershell
-     python -m venv venv
-     .\venv\Scripts\Activate.ps1
-     ```
-   - **Windows (CMD)**:
-     ```cmd
-     python -m venv venv
-     .\venv\Scripts\activate.bat
-     ```
-   - **Linux / macOS**:
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
-
-3. **Install dependencies**:
+2. **Install dependencies**:
    ```bash
-   pip install --upgrade pip
-   pip install -r backend/requirements.txt
+   pip install -r requirements.txt
    ```
 
-4. **Launch the FastAPI server**:
+3. **Start the FastAPI backend**:
    ```bash
-   python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+   uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
    ```
 
-5. **Verify API Endpoints**:
-   - **Backend API**: `http://127.0.0.1:8000`
-   - **Health Check**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
-   - **Interactive OpenAPI Documentation (Swagger UI)**: [http://127.0.0.1:8000/api/v1/docs](http://127.0.0.1:8000/api/v1/docs)
+   Interactive Swagger API docs available at: **[http://localhost:8000/api/v1/docs](http://localhost:8000/api/v1/docs)**
 
 ---
 
-### Step 3: Frontend Setup & Execution (React 18 + Vite)
+### 4. Frontend Setup & Run
 
-Open a **separate terminal window**:
+Open a separate terminal:
 
-1. **Navigate to the frontend directory**:
+1. **Navigate to frontend directory**:
    ```bash
-   cd Finance-agent/frontend
+   cd frontend
    ```
 
 2. **Install Node modules**:
@@ -308,81 +230,67 @@ Open a **separate terminal window**:
    npm run dev
    ```
 
-4. **Access the Application**:
-   Open **[http://localhost:3000](http://localhost:3000)** (or `http://localhost:5173`) in your browser.
-
-5. *(Optional)* **Build production bundle**:
-   ```bash
-   npm run build
-   ```
+   Access the application at: **[http://localhost:5173](http://localhost:5173)**
 
 ---
 
-## 👥 Default Auto-Seeded User Accounts & RBAC
+## 👥 Auto-Seeded User Presets & RBAC
 
-The database automatically initializes an enterprise organization (**FinanceCorp Global**) and three primary role presets:
+The database automatically seeds an enterprise tenant (**FinanceCorp Global**) with three role presets:
 
-| Role | Corporate Email | Password | Permissions & Scope | Default Landing View |
+| Role | Email | Password | Permissions | Default View |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@finance.corp` | `AdminPass123!` | Full control, Teammate Invites, Security Feed, SQL Console, Document Management | Admin Panel & Security Feed |
-| **Analyst** | `analyst@finance.corp` | `AnalystPass123!` | Multi-Agent Analysis, DuckDB SQL Console, Recharts, RAG Chat, Executive Reports | Analysis & Visualizations |
-| **Viewer** | `viewer@finance.corp` | `ViewerPass123!` | Read-only document access & PDF certificate downloads (RAG Chat queries blocked) | Document Repository |
+| **Admin** | `admin@finance.corp` | `AdminPass123!` | Full control, Teammate Invites, Live Security Feed, Document Manager | Admin Governance Panel |
+| **Analyst** | `analyst@finance.corp` | `AnalystPass123!` | Multi-Agent Analysis, DuckDB SQL Console, Visualizations, RAG Chat | Financial Analysis |
+| **Viewer** | `viewer@finance.corp` | `ViewerPass123!` | Read-only viewing and certificate downloads (AI Chat queries restricted) | Document Repository |
 
-> ⚡ **Auto-Admin Promotion Rule**: Any new account created with `"admin"` anywhere in the email string (e.g. `leadadmin@enterprise.com`, `user.admin@finance.corp`) automatically inherits the full `admin` role upon registration or Google Workspace sign-in.
->
-> 💡 **Quick Sign-In**: On the login modal, click any preset badge ("Admin", "Analyst", "Viewer") to instantly populate credentials.
+> 💡 **Quick Login**: Click any preset button on the login modal to auto-populate test credentials.
 
 ---
 
-## 🧪 Comprehensive Automated Test Suite (20/20 Passing - 100%)
+## 🧪 Automated Testing Suite (52/52 Passing - 100%)
 
-Run the complete Pytest suite from the project root:
+Run the complete test suite:
 
 ```bash
-python -m pytest tests/ -v
+python -m pytest
 ```
 
-### Test Suite Results
+### Test Coverage Highlights
 
 ```text
-============================= test session starts =============================
-platform win32 -- Python 3.13.7, pytest-9.1.1, pluggy-1.6.0
-collected 20 items
-
-tests/test_arithmetic.py::test_gross_margin_calculation PASSED           [  5%]
-tests/test_arithmetic.py::test_operating_margin_calculation PASSED       [ 10%]
-tests/test_arithmetic.py::test_yoy_growth_calculation PASSED             [ 15%]
-tests/test_arithmetic.py::test_zero_division_guard PASSED                [ 20%]
-tests/test_database.py::test_database_initialization_and_seeding PASSED  [ 25%]
-tests/test_e2e_pipeline.py::test_end_to_end_sample_pdf_pipeline PASSED  [ 30%]
-tests/test_grounding.py::test_exact_verbatim_grounding_success PASSED    [ 35%]
-tests/test_grounding.py::test_fuzzy_grounding_threshold PASSED           [ 40%]
-tests/test_grounding.py::test_fabricated_number_rejection PASSED         [ 45%]
-tests/test_grounding.py::test_partial_substring_grounding PASSED         [ 50%]
-tests/test_rag_and_chat.py::test_hybrid_retrieval_and_rrf PASSED         [ 55%]
-tests/test_rag_and_chat.py::test_prompt_injection_defense PASSED         [ 60%]
-tests/test_rbac.py::test_password_hashing PASSED                         [ 65%]
-tests/test_rbac.py::test_jwt_token_generation PASSED                     [ 70%]
-tests/test_rbac.py::test_tenant_isolation_cross_organization_access PASSED [ 75%]
-tests/test_rbac.py::test_role_based_permissions PASSED                   [ 80%]
-tests/test_rbac.py::test_pdf_security_scanner_malware_detection PASSED  [ 85%]
-tests/test_reconciliation.py::test_primary_statement_priority PASSED    [ 90%]
-tests/test_reconciliation.py::test_footnote_override_resolution PASSED  [ 95%]
-tests/test_reconciliation.py::test_audit_report_override PASSED          [100%]
-
-============================== 20 passed in ~1.3s ==============================
+tests\test_arithmetic.py ....                                            [  7%]
+tests\test_citation_validator.py ......                                  [ 19%]
+tests\test_database.py .                                                 [ 21%]
+tests\test_document_formats.py ...                                       [ 26%]
+tests\test_e2e_pipeline.py .                                             [ 28%]
+tests\test_financial_accuracy.py ....                                    [ 36%]
+tests\test_grounding.py ....                                             [ 44%]
+tests\test_hybrid_retrieval.py ...                                       [ 50%]
+tests\test_multimodal_ingestion.py ....                                  [ 57%]
+tests\test_rag_and_chat.py ..                                            [ 61%]
+tests\test_rag_pipeline_regression.py ..........                         [ 80%]
+tests\test_rbac.py .......                                               [ 94%]
+tests\test_reconciliation.py ...                                         [100%]
+================= 52 passed, 41 warnings in 142.42s =================
 ```
+
+Key test suites:
+- **`test_rag_pipeline_regression.py`**: Verifies known revenue retrieval, financial synonym expansion (PAT), multi-page boundary retrieval, safe abstention, empty PDF guards, metadata preservation, citation validation, DB restart hydration, tenant isolation, and arithmetic edge cases.
+- **`test_hybrid_retrieval.py`**: Validates BM25 lexical ranking, dense vector scoring, structured table retrieval, and visual chart retrieval.
+- **`test_citation_validator.py`**: Asserts deterministic rejection of fabricated quotes, out-of-bounds page indices, and cross-document references.
+- **`test_rbac.py`**: Tests tenant isolation, password hashing, JWT expiration, and malware scanner protections.
 
 ---
 
-## 🔒 Security & SOC2 Governance Standards
+## 🔒 Security & Governance
 
-1. **Deterministic Substring Grounding**: Extracted values must strictly match verbatim text in the source filing before persistence.
-2. **Immutable SHA-256 Ledger**: Every document is fingerprinted upon upload with a Merkle block receipt (`VERIFIED_IMMUTABLE`).
-3. **Anti-Malware Vector Scanner**: Inspects binary stream for `%PDF-1.x` headers and neutralizes `/JavaScript` and `/Launch` exploit payloads.
-4. **Tenant Isolation**: Documents, analytical records, and audit logs are strictly isolated by `organization_id`.
-5. **Role-Enforced AI Chat**: Unauthorized roles (`viewer`) cannot execute RAG queries, preventing unauthorized data exfiltration.
-6. **Live Security Event Log**: All chat queries and access events are logged with auth provider (`google` vs `local`), user identity, role, and timestamp.
+1. **Zero-Trust Grounding**: Financial metrics and citations are strictly validated against authoritative document pages outside the LLM.
+2. **Cryptographic SHA-256 Hash Chain**: Every uploaded document receives an immutable blockchain-style SHA-256 verification seal.
+3. **Anti-Malware Vector Scanner**: Inspects binary headers (`%PDF-`) and blocks exploit payloads (`/JavaScript`, `/Launch`).
+4. **Tenant Isolation**: All database queries and RAG retrieval passes are strictly partitioned by `organization_id`.
+5. **Role-Enforced AI Chat**: Unauthorized roles (`viewer`) are forbidden from querying the chatbot, logging security events in real time.
+6. **Protected Secrets**: Complete `.gitignore` policies protect `.env`, `.env.*`, API tokens, database files, and uploaded documents from version control leaks.
 
 ---
 

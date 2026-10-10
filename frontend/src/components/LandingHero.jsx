@@ -58,7 +58,7 @@ export default function LandingHero({ onGetStarted, onUploadClick, hasActiveDocu
           )}
 
           <span className="text-[11px] text-slate-500 font-mono hidden sm:inline">
-            Deterministic Grounding • Blockchain SHA-256 Seal
+            Deterministic Grounding • SHA-256 Integrity Hash
           </span>
         </div>
 

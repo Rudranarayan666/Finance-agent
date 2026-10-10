@@ -142,8 +142,27 @@ class ApiService {
   }
 
   // Page inspection & PDF stream
+  async getDocumentStatus(docId) {
+    return this.request(`/documents/${docId}/status`);
+  }
+
   async getDocumentPage(docId, pageNumber) {
     return this.request(`/documents/${docId}/page/${pageNumber}`);
+  }
+
+  async getDocumentPageEvidence(docId, pageNumber) {
+    return this.request(`/documents/${docId}/page/${pageNumber}/evidence`);
+  }
+
+  getDocumentPageImageUrl(docId, pageNumber, dpi = 150) {
+    const token = this.token;
+    return `${API_BASE}/documents/${docId}/page/${pageNumber}/image?dpi=${dpi}${token ? `&token=${token}` : ''}`;
+  }
+
+  async reindexDocument(docId) {
+    return this.request(`/documents/${docId}/reindex`, {
+      method: 'POST'
+    });
   }
 
   getDocumentPdfUrl(docId) {

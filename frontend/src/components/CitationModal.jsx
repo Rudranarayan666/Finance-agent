@@ -1,17 +1,16 @@
-import React from 'react';
-import { BookOpen, X, Calculator, CheckCircle2, FileText, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, X, Calculator, CheckCircle2, FileText, ExternalLink, ShieldCheck } from 'lucide-react';
 import { api } from '../services/api';
+import PdfSourceViewer from './PdfSourceViewer';
 
 export default function CitationModal({ citationData, onClose }) {
+  const [showFullPdfViewer, setShowFullPdfViewer] = useState(false);
   if (!citationData) return null;
 
   const { title, field, value, unit, page, quote, confidence, method, formula, company, doc_id } = citationData;
 
-  const handleOpenPdfPage = () => {
-    if (doc_id && page) {
-      const url = api.getDocumentPdfUrl(doc_id) + `#page=${page}`;
-      window.open(url, '_blank');
-    }
+  const handleOpenPdfViewer = () => {
+    setShowFullPdfViewer(true);
   };
 
   return (
@@ -96,11 +95,12 @@ export default function CitationModal({ citationData, onClose }) {
         <div className="flex items-center justify-between pt-2 border-t-2 border-black text-xs sm:text-sm">
           {doc_id && page ? (
             <button
-              onClick={handleOpenPdfPage}
-              className="neo-button-primary text-xs sm:text-sm py-1.5 px-3"
+              onClick={handleOpenPdfViewer}
+              className="neo-button-primary text-xs sm:text-sm py-1.5 px-3 flex items-center space-x-1"
             >
-              <span>OPEN PDF PAGE {page}</span>
-              <ExternalLink className="w-3.5 h-3.5 stroke-[3]" />
+              <ShieldCheck className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>VERIFY IN PDF VIEWER (PAGE {page})</span>
+              <ExternalLink className="w-3 h-3 stroke-[3]" />
             </button>
           ) : (
             <span className="text-xs text-zinc-800 font-sans font-medium">
@@ -117,6 +117,22 @@ export default function CitationModal({ citationData, onClose }) {
         </div>
 
       </div>
+
+      {showFullPdfViewer && (
+        <PdfSourceViewer
+          citation={{
+            document_id: doc_id,
+            page: page,
+            physical_page_number: page,
+            quote: quote,
+            snippet: quote,
+            content_type: 'text'
+          }}
+          documentId={doc_id}
+          companyName={company || 'Corporate Filing'}
+          onClose={() => setShowFullPdfViewer(false)}
+        />
+      )}
     </div>
   );
 }

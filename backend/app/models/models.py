@@ -72,10 +72,14 @@ class Document(Base):
     file_path = Column(String, nullable=False)
     file_size_bytes = Column(Integer, nullable=False)
     file_hash = Column(String, index=True, nullable=False)
+    prev_hash = Column(String, nullable=True)
+    chain_hash = Column(String, index=True, nullable=True)
     total_pages = Column(Integer, default=0)
+    version = Column(Integer, default=1)
+    document_version = Column(String, default="v1")
     company_name = Column(String, nullable=True)
     fiscal_period = Column(String, nullable=True)
-    status = Column(String, default="pending")  # pending, processing, completed, failed
+    status = Column(String, default="pending")  # pending, uploaded, queued, processing, indexing, completed, ready, failed
     error_message = Column(Text, nullable=True)
     uploaded_by_id = Column(String, ForeignKey("users.id"), nullable=False)
     organization_id = Column(String, ForeignKey("organizations.id"), nullable=True)
@@ -89,8 +93,34 @@ class Document(Base):
     access_grants = relationship("DocumentAccess", back_populates="document", cascade="all, delete-orphan")
     analysis = relationship("AnalysisRecord", back_populates="document", uselist=False, cascade="all, delete-orphan")
     chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
+    evidence_records = relationship("EvidenceRecord", back_populates="document", cascade="all, delete-orphan")
     metrics = relationship("Metric", back_populates="document", cascade="all, delete-orphan")
     chat_sessions = relationship("ChatSession", back_populates="document", cascade="all, delete-orphan")
+
+
+class EvidenceRecord(Base):
+    __tablename__ = "evidence_records"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    document_id = Column(String, ForeignKey("documents.id"), nullable=False)
+    document_version = Column(String, default="v1", nullable=False)
+    organization_id = Column(String, ForeignKey("organizations.id"), nullable=True)
+    physical_page_index = Column(Integer, nullable=False)  # 0-indexed
+    physical_page_number = Column(Integer, nullable=False)  # 1-indexed
+    printed_page_label = Column(String, nullable=True)
+    section_title = Column(String, nullable=True)
+    content_type = Column(String, default="text")  # text, table, chart, image, ocr, financial_metric
+    raw_text = Column(Text, nullable=False)
+    normalized_text = Column(Text, nullable=True)
+    table_data = Column(JSON, nullable=True)  # {headers: [], rows: [], units: "", currency: ""}
+    bounding_boxes = Column(JSON, nullable=True)  # [{x0, y0, x1, y1, label}]
+    source_asset_reference = Column(String, nullable=True)
+    extraction_method = Column(String, default="pymupdf")
+    extraction_confidence = Column(Float, default=1.0)
+    content_hash = Column(String, index=True, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    document = relationship("Document", back_populates="evidence_records")
 
 
 class DocumentAccess(Base):

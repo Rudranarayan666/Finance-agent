@@ -65,6 +65,14 @@ def migrate_schema():
             cur.execute("ALTER TABLE documents ADD COLUMN organization_id VARCHAR;")
         if "is_org_shared" not in doc_cols:
             cur.execute("ALTER TABLE documents ADD COLUMN is_org_shared BOOLEAN DEFAULT 0;")
+        if "prev_hash" not in doc_cols:
+            cur.execute("ALTER TABLE documents ADD COLUMN prev_hash VARCHAR;")
+        if "chain_hash" not in doc_cols:
+            cur.execute("ALTER TABLE documents ADD COLUMN chain_hash VARCHAR;")
+        if "version" not in doc_cols:
+            cur.execute("ALTER TABLE documents ADD COLUMN version INTEGER DEFAULT 1;")
+        if "document_version" not in doc_cols:
+            cur.execute("ALTER TABLE documents ADD COLUMN document_version VARCHAR DEFAULT 'v1';")
 
         # Check audit_logs table columns
         cur.execute("PRAGMA table_info(audit_logs);")
@@ -74,15 +82,22 @@ def migrate_schema():
 
         conn.commit()
         conn.close()
+
+        # Ensure all tables (including evidence_records) exist
+        Base.metadata.create_all(bind=engine)
     except Exception as e:
         print(f"Schema migration note: {e}")
 
 
 def seed_default_users_and_samples():
     """
-    Seeds default user accounts (Admin, Analyst, Viewer) and default Organization
-    so sign in works on the first try.
+    Seeds default demo user accounts (Admin, Analyst, Viewer) and default Organization.
+    Demo only: disabled when ENV=production.
     """
+    if getattr(settings, "ENV", "development").lower() == "production":
+        print("Production environment detected: automated user seeding disabled.")
+        return
+
     from datetime import datetime
     from backend.app.models.models import User, Organization, Document
     from backend.app.core.security import get_password_hash
@@ -99,10 +114,11 @@ def seed_default_users_and_samples():
             db.commit()
             db.refresh(org)
 
+        # Demo-only credentials (disabled in production)
         default_users = [
-            ("analyst@finance.corp", "AnalystPass123!", "Senior Equity Analyst", "analyst"),
-            ("admin@finance.corp", "AdminPass123!", "Chief Risk Officer", "admin"),
-            ("viewer@finance.corp", "ViewerPass123!", "Portfolio Investor", "viewer"),
+            ("analyst@finance.corp", "AnalystPass123!", "Senior Equity Analyst (Demo)", "analyst"),
+            ("admin@finance.corp", "AdminPass123!", "Chief Risk Officer (Demo)", "admin"),
+            ("viewer@finance.corp", "ViewerPass123!", "Portfolio Investor (Demo)", "viewer"),
         ]
 
         for email, pwd, name, role in default_users:
@@ -139,31 +155,42 @@ def seed_default_users_and_samples():
 
 
 def preindex_existing_documents():
-    from backend.app.models.models import Document
-    from backend.app.parser.pdf_parser import PDFDocumentParser
-    from backend.app.rag.rag_service import rag_service
+    if "PYTEST_CURRENT_TEST" in os.environ or os.environ.get("ENV") == "test":
+        return
 
-    db = SessionLocal()
-    try:
-        docs = db.query(Document).all()
-        for d in docs:
-            if d.file_path and os.path.exists(d.file_path):
-                try:
-                    parser = PDFDocumentParser(d.file_path)
-                    extracted = parser.extract_pages()
-                    rag_service.index_document_chunks(d.id, extracted["pages"])
-                except Exception as ex:
-                    print(f"Index doc {d.id} warning: {ex}")
-    except Exception as e:
-        print(f"Pre-index error: {e}")
-    finally:
-        db.close()
+    import threading
+
+    def _worker():
+        from backend.app.models.models import Document
+        from backend.app.parser.pdf_parser import PDFDocumentParser
+        from backend.app.rag.rag_service import rag_service
+
+        db = SessionLocal()
+        try:
+            docs = db.query(Document).order_by(Document.uploaded_at.desc()).limit(3).all()
+            for d in docs:
+                if d.id in rag_service.doc_passages:
+                    continue
+                if d.file_path and os.path.exists(d.file_path):
+                    try:
+                        parser = PDFDocumentParser(d.file_path)
+                        extracted = parser.extract_pages()
+                        rag_service.index_document_chunks(d.id, extracted["pages"])
+                    except Exception as ex:
+                        print(f"Index doc {d.id} warning: {ex}")
+        except Exception as e:
+            print(f"Pre-index error: {e}")
+        finally:
+            db.close()
+
+    bg_thread = threading.Thread(target=_worker, daemon=True)
+    bg_thread.start()
 
 
 def init_db():
     from backend.app.models.models import (
         Organization, User, Invitation, Document, DocumentAccess,
-        DocumentChunk, Metric, AnalysisRecord, ChatSession, ChatMessage, AuditLog
+        DocumentChunk, EvidenceRecord, Metric, AnalysisRecord, ChatSession, ChatMessage, AuditLog
     )
     Base.metadata.create_all(bind=engine)
     migrate_schema()

@@ -11,9 +11,13 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
   const validateAndUpload = async (file) => {
     setError(null);
 
-    // 1. File Type Validation
-    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
-      setError('INVALID FILE TYPE: Please upload a valid SEC 10-K, 10-Q, or Annual Report PDF.');
+    // 1. File Type Validation (PDF, Excel, CSV)
+    const validExtensions = ['.pdf', '.xlsx', '.xls', '.csv'];
+    const fileName = file.name.toLowerCase();
+    const isValidExt = validExtensions.some(ext => fileName.endsWith(ext));
+
+    if (!isValidExt) {
+      setError('INVALID FILE TYPE: Please upload a valid financial document (PDF, Excel .xlsx/.xls, or CSV).');
       return;
     }
 
@@ -68,7 +72,7 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,application/pdf"
+          accept=".pdf,.xlsx,.xls,.csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
           onChange={handleFileChange}
           className="hidden"
         />
@@ -80,10 +84,10 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
             </div>
             <div>
               <h3 className="text-xs font-black uppercase text-black tracking-wider">
-                {isUploading ? 'VERIFYING & INGESTING PDF...' : 'EXECUTING MULTI-AGENT EXTRACTION GRAPH...'}
+                {isUploading ? 'VERIFYING & INGESTING DOCUMENT...' : 'EXECUTING MULTI-AGENT EXTRACTION GRAPH...'}
               </h3>
               <p className="text-[11px] text-zinc-600 font-sans mt-0.5">
-                {currentJob?.step || 'Parsing table layout, extracting formulas & computing verification seals...'}
+                {currentJob?.step || 'Parsing table layout, extracting sheets & computing verification seals...'}
               </p>
             </div>
 
@@ -100,14 +104,17 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
 
             <div className="space-y-1">
               <h3 className="text-sm font-black text-black uppercase tracking-wider">
-                DROP SEC FILING HERE OR CLICK TO BROWSE
+                DROP FINANCIAL DOCUMENT HERE OR CLICK TO BROWSE
               </h3>
               <p className="text-xs text-zinc-600 font-sans">
-                Supports 10-K, 10-Q, 8-K, Annual Reports up to 50MB (max 500 pages)
+                Supports PDF (.pdf), Excel (.xlsx, .xls), and CSV (.csv) filings up to 50MB
               </p>
             </div>
 
             <div className="inline-flex items-center gap-2 pt-1 flex-wrap justify-center">
+              <span className="neo-badge text-[9px] bg-[#FFE600] text-black font-black">
+                PDF &bull; EXCEL &bull; CSV
+              </span>
               <span className="neo-badge text-[9px] bg-zinc-100">
                 <ShieldCheck className="w-3 h-3 text-black stroke-[2.5]" />
                 SHA-256 SEALED

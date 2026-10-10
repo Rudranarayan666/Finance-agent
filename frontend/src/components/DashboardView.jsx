@@ -127,7 +127,7 @@ export default function DashboardView({
           <div className="mt-3">
             <div className="text-2xl font-black text-black">SHA-256</div>
             <div className="text-xs text-zinc-800 font-sans font-medium mt-0.5">
-              Merkle Ledger Receipts
+              SHA-256 Hash Chain Receipts
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@ export default function DashboardView({
           <div className="flex items-center justify-between">
             <h2 className="text-xs sm:text-sm font-black text-black uppercase flex items-center gap-2">
               <Upload className="w-4 h-4 stroke-[3]" />
-              <span>INGEST NEW FINANCIAL REPORT (PDF)</span>
+              <span>INGEST FINANCIAL REPORT (PDF / EXCEL / CSV)</span>
             </h2>
             <span className="neo-badge text-xs bg-zinc-100 text-black">
               ANTI-MALWARE SCAN ACTIVE
@@ -231,7 +231,7 @@ export default function DashboardView({
               ) : (
                 <tr>
                   <td colSpan="5" className="neo-table-cell text-center py-8 text-zinc-800 font-sans font-medium text-xs sm:text-sm">
-                    No documents uploaded yet. Upload a PDF filing to start.
+                    No documents uploaded yet. Upload a PDF, Excel, or CSV filing to start.
                   </td>
                 </tr>
               )}

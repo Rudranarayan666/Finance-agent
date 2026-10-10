@@ -67,7 +67,7 @@ export default function DocumentsView({
             className="neo-button-primary text-xs self-start sm:self-auto"
           >
             <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>{showUploadZone ? 'HIDE UPLOAD' : '+ UPLOAD PDF'}</span>
+            <span>{showUploadZone ? 'HIDE UPLOAD' : '+ UPLOAD DOCUMENT'}</span>
           </button>
         )}
       </div>
