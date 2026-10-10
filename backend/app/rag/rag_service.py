@@ -68,6 +68,24 @@ class AgenticRAGService:
         self.doc_tfidf_matrices: Dict[str, Any] = {}
         self.doc_bm25_stats: Dict[str, Dict[str, Any]] = {}
 
+    def clear_document_index(self, document_id: str):
+        """
+        Purges in-memory passages, BM25 indices, TF-IDF matrices, and cached state for document.
+        """
+        self.doc_passages.pop(document_id, None)
+        self.doc_pages_dict.pop(document_id, None)
+        self.doc_layout.pop(document_id, None)
+        self.doc_tables.pop(document_id, None)
+        self.doc_visuals.pop(document_id, None)
+        self.doc_versions.pop(document_id, None)
+        self.doc_page_counts.pop(document_id, None)
+        self.doc_tfidf_vectorizers.pop(document_id, None)
+        self.doc_tfidf_matrices.pop(document_id, None)
+        self.doc_bm25_stats.pop(document_id, None)
+
+    def delete_document_index(self, document_id: str):
+        self.clear_document_index(document_id)
+
     def index_document_chunks(
         self,
         document_id: str,

@@ -143,12 +143,12 @@ export default function MetricsGrid({ metrics = [], onInspectCitation, companyNa
 
                 {/* Value Block */}
                 <div className="mt-3 my-1.5">
-                  <div className={`text-xl sm:text-2xl font-black tracking-tight line-clamp-1 ${
-                    isDisclosed ? 'text-black' : 'text-zinc-600 text-xs italic font-bold'
+                  <div className={`text-2xl sm:text-3xl font-black tracking-tight leading-none ${
+                    isDisclosed ? 'text-black' : 'text-zinc-500 text-sm italic font-bold'
                   }`}>
                     {isDisclosed ? metric.value : 'Not Disclosed'}
                   </div>
-                  <div className="text-xs text-zinc-700 font-mono mt-0.5 truncate font-bold">
+                  <div className="text-sm text-zinc-700 font-bold mt-1.5">
                     {metric.unit || (isDisclosed ? 'Reported figure' : '—')}
                   </div>
                 </div>

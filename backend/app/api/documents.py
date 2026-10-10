@@ -3,6 +3,7 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request, status
+from fastapi.responses import FileResponse, Response
 from sqlalchemy.orm import Session
 
 from backend.app.config import settings
@@ -15,6 +16,8 @@ from backend.app.core.security_scanner import SecurityScanner
 from backend.app.parser.pdf_parser import PDFDocumentParser, PDFParserError
 from backend.app.parser.document_parser import DocumentParser, DocumentParserError
 from backend.app.rag.rag_service import rag_service
+from backend.app.services.credit_service import CreditService
+from backend.app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/documents", tags=["Documents"])
 
@@ -23,17 +26,34 @@ router = APIRouter(prefix="/documents", tags=["Documents"])
 async def upload_financial_document(
     request: Request,
     file: UploadFile = File(...),
-    current_user: User = Depends(require_role(["admin", "analyst"])),
+    current_user: User = Depends(require_role(["admin", "analyst", "customer"])),
     db: Session = Depends(get_db)
 ):
-    # 1. Rate limit / sanity checks
+    # 1. SaaS Plan Verification & Active Document Capacity Limit Check
+    SubscriptionService.check_active_document_limit(db, current_user)
+
+    # 2. Credit Availability Check (requires 10 credits for successful indexing)
+    upload_cost = getattr(settings, "UPLOAD_CREDIT_COST", 10)
+    if not (current_user.is_admin or current_user.role == "admin"):
+        if not CreditService.check_available_credits(db, current_user.id, upload_cost):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail={
+                    "error": "INSUFFICIENT_CREDITS",
+                    "message": f"Upload and indexing requires {upload_cost} credits, but you do not have enough credits remaining. Please upgrade or renew your plan.",
+                    "required_credits": upload_cost,
+                    "upgrade_available": True
+                }
+            )
+
+    # 3. Rate limit / sanity checks
     one_hour_ago = datetime.utcnow() - timedelta(hours=1)
     recent_uploads = db.query(Document).filter(
         Document.uploaded_by_id == current_user.id,
         Document.uploaded_at >= one_hour_ago
     ).count()
 
-    if recent_uploads >= settings.MAX_UPLOADS_PER_HOUR and current_user.role != "admin":
+    if recent_uploads >= settings.MAX_UPLOADS_PER_HOUR and not (current_user.is_admin or current_user.role == "admin"):
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"Upload rate limit exceeded ({settings.MAX_UPLOADS_PER_HOUR} uploads/hour)."
@@ -132,6 +152,27 @@ async def upload_financial_document(
 
     # Also associate rag_service index with document ID and version
     rag_service.index_document_chunks(new_doc.id, extracted["pages"], document_version="v1")
+
+    # SaaS Credit Charge (Only after successful parsing and indexing)
+    if not (current_user.is_admin or current_user.role == "admin"):
+        CreditService.debit_credits(
+            db,
+            user_id=current_user.id,
+            amount=upload_cost,
+            transaction_type="upload_debit",
+            reason=f"PDF upload & indexing: {file.filename}",
+            document_id=new_doc.id,
+            reference=f"upload_{new_doc.id}"
+        )
+        SubscriptionService.record_usage(
+            db,
+            user_id=current_user.id,
+            operation_type="upload",
+            credits_charged=upload_cost,
+            document_id=new_doc.id,
+            status="success",
+            idempotency_key=f"upload_{new_doc.id}"
+        )
 
     log_audit_event(
         db, 
@@ -534,7 +575,14 @@ def delete_document(
 ):
     doc = check_document_access(document_id, current_user, db, required_permission="edit")
     
-    # Delete file from disk
+    # Customer data isolation: only owner or platform admin can delete
+    if not (current_user.is_admin or current_user.role == "admin") and doc.uploaded_by_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete documents you own.")
+
+    # 1. Invalidate and purge in-memory RAG index and passages
+    rag_service.delete_document_index(document_id)
+
+    # 2. Delete file from private disk storage
     if os.path.exists(doc.file_path):
         try:
             os.remove(doc.file_path)
@@ -542,6 +590,58 @@ def delete_document(
             pass
 
     log_audit_event(db, action="delete", user=current_user, document_id=document_id, request=request)
+    
+    # 3. Delete document record (releases active document slot)
     db.delete(doc)
     db.commit()
-    return {"status": "success", "message": "Document deleted successfully"}
+    return {"status": "success", "message": "Document deleted successfully and active slot released."}
+
+
+@router.get("/{document_id}/report/download")
+def download_financial_report(
+    document_id: str,
+    request: Request,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Downloads authenticated financial report export.
+    Gated to Pro and Premium subscribers. Basic tier users receive 403 with upgrade prompt.
+    """
+    doc = check_document_access(document_id, current_user, db, required_permission="view")
+
+    # SaaS Entitlement Verification
+    if not (current_user.is_admin or current_user.role == "admin"):
+        sub = SubscriptionService.get_user_subscription(db, current_user.id)
+        if not sub or not sub.plan or not sub.plan.can_download_reports:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "error": "PLAN_RESTRICTION",
+                    "message": "Downloading financial reports and exports is exclusive to Pro and Premium plans. Please upgrade your plan.",
+                    "upgrade_available": True
+                }
+            )
+
+    if not os.path.exists(doc.file_path):
+        raise HTTPException(status_code=404, detail="Underlying document file not found on disk")
+
+    log_audit_event(db, action="report_download", user=current_user, document_id=document_id, request=request)
+
+    # Record usage
+    SubscriptionService.record_usage(
+        db,
+        user_id=current_user.id,
+        operation_type="report_download",
+        credits_charged=0,
+        document_id=doc.id,
+        status="success"
+    )
+
+    return FileResponse(
+        path=doc.file_path,
+        media_type="application/pdf",
+        filename=f"Report_{doc.filename}",
+        headers={"Content-Disposition": f'attachment; filename="Report_{doc.filename}"'}
+    )
+

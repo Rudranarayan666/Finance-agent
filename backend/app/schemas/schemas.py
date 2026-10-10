@@ -32,6 +32,7 @@ class UserRole(str, Enum):
     ADMIN = "admin"
     ANALYST = "analyst"
     VIEWER = "viewer"
+    CUSTOMER = "customer"
 
 
 # -------------------------------------------------------------
@@ -129,11 +130,16 @@ class UserResponse(BaseModel):
     email: str
     full_name: str
     role: UserRole
+    is_admin: bool = False
     provider: str = "local"
     organization_id: Optional[str] = None
     organization_name: Optional[str] = None
     last_active: Optional[datetime] = None
     created_at: datetime
+    has_subscription: bool = False
+    plan_key: Optional[str] = None
+    plan_name: Optional[str] = None
+    credits_balance: Optional[int] = None
 
 
 class TokenResponse(BaseModel):
@@ -232,3 +238,108 @@ class AuditLogResponse(BaseModel):
     ip_address: Optional[str]
     timestamp: datetime
     details: Optional[Dict[str, Any]] = None
+
+
+# -------------------------------------------------------------
+# SaaS Subscription, Credit & Payment Schemas
+# -------------------------------------------------------------
+class PlanResponse(BaseModel):
+    id: str
+    key: str
+    name: str
+    price: int
+    currency: str = "INR"
+    billing_interval: str = "month"
+    max_documents: int
+    monthly_credits: int
+    questions_per_doc_limit: int
+    upload_credit_cost: int
+    question_credit_cost: int
+    visual_credit_cost: int
+    can_download_reports: bool
+    can_compare_years: bool
+    priority_processing: bool
+    is_active: bool
+
+
+class SubscriptionResponse(BaseModel):
+    id: str
+    user_id: str
+    plan_id: str
+    status: str
+    current_period_start: datetime
+    current_period_end: datetime
+    plan: PlanResponse
+    active_documents_count: int = 0
+    max_documents: int = 2
+
+
+class CreditAccountResponse(BaseModel):
+    balance: int
+    period_allowance: int
+    period_used: int
+    period_start: datetime
+    period_end: datetime
+    plan_key: Optional[str] = "basic"
+    warning_level: Optional[str] = "none"  # "none", "warning_20", "warning_10", "exhausted"
+
+
+class CreditTransactionResponse(BaseModel):
+    id: str
+    user_id: str
+    document_id: Optional[str] = None
+    transaction_type: str
+    amount: int
+    balance_before: int
+    balance_after: int
+    reason: str
+    reference: Optional[str] = None
+    created_at: datetime
+
+
+class SelectPlanRequest(BaseModel):
+    plan_key: str
+
+
+class PaymentCheckoutRequest(BaseModel):
+    plan_key: str
+
+
+class PaymentCheckoutResponse(BaseModel):
+    order_id: str
+    amount: int
+    currency: str = "INR"
+    key_id: Optional[str] = None
+    plan_key: str
+    plan_name: str
+    test_mode: bool = True
+
+
+class PaymentVerifyRequest(BaseModel):
+    order_id: str
+    payment_id: str
+    signature: str
+    plan_key: str
+
+
+class CreditAdjustRequest(BaseModel):
+    amount: int
+    reason: str
+
+
+class AdminPlanChangeRequest(BaseModel):
+    plan_key: str
+
+
+class AdminOverviewResponse(BaseModel):
+    total_users: int
+    active_subscriptions: int
+    plan_distribution: Dict[str, int]
+    mrr_inr: int
+    successful_payments: int
+    failed_payments: int
+    total_documents: int
+    total_questions: int
+    total_credits_consumed: int
+    recent_events: List[Dict[str, Any]]
+

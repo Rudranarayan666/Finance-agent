@@ -23,6 +23,8 @@ class GoogleAuthRequest(BaseModel):
 
 
 def _format_user_response(user: User, db: Session) -> UserResponse:
+    from backend.app.models.models import Subscription, CreditAccount
+
     org_name = None
     if user.organization_id:
         org = db.query(Organization).filter(Organization.id == user.organization_id).first()
@@ -31,16 +33,38 @@ def _format_user_response(user: User, db: Session) -> UserResponse:
     if not org_name:
         org_name = "FinanceCorp Global"
 
+    is_administrator = bool(user.is_admin or user.role == "admin")
+    
+    # Check active subscription
+    sub = db.query(Subscription).filter(
+        Subscription.user_id == user.id,
+        Subscription.status == "active"
+    ).first()
+    has_sub = sub is not None or is_administrator
+    plan_key = sub.plan.key if (sub and sub.plan) else ("premium" if is_administrator else None)
+    plan_name = sub.plan.name if (sub and sub.plan) else ("Enterprise Admin" if is_administrator else None)
+
+    # Check credit balance
+    cred = db.query(CreditAccount).filter(CreditAccount.user_id == user.id).first()
+    credits_bal = cred.balance if cred else (10000 if is_administrator else 0)
+
+    role_val = "admin" if is_administrator else (user.role or "customer")
+
     return UserResponse(
         id=user.id,
         email=user.email,
         full_name=user.full_name,
-        role=user.role,
+        role=role_val,
+        is_admin=is_administrator,
         provider=user.provider or "local",
         organization_id=user.organization_id,
         organization_name=org_name,
         last_active=user.last_active or user.created_at,
-        created_at=user.created_at
+        created_at=user.created_at,
+        has_subscription=has_sub,
+        plan_key=plan_key,
+        plan_name=plan_name,
+        credits_balance=credits_bal
     )
 
 
@@ -63,18 +87,16 @@ def register_user(user_in: UserCreate, request: Request, db: Session = Depends(g
     default_org = db.query(Organization).first()
     org_id = default_org.id if default_org else None
 
-    # First user of an organization becomes admin; all others are analyst by default
-    org_user_count = db.query(User).filter(User.organization_id == org_id).count() if org_id else db.query(User).count()
-    if org_user_count == 0:
-        role = "admin"
-    else:
-        role = user_in.role.value if hasattr(user_in.role, "value") else str(user_in.role or "analyst")
+    # Public registration NEVER grants admin privileges (strictly enforced)
+    role = "customer"
+    is_admin = False
 
     new_user = User(
         email=clean_email,
         hashed_password=get_password_hash(user_in.password),
         full_name=user_in.full_name or clean_email.split("@")[0].capitalize(),
         role=role,
+        is_admin=is_admin,
         provider="local",
         organization_id=org_id,
         last_active=datetime.utcnow(),
@@ -158,14 +180,14 @@ def google_oauth_login(
 
     user = db.query(User).filter(User.email == google_email).first()
     if not user:
-        org_user_count = db.query(User).filter(User.organization_id == org_id).count() if org_id else db.query(User).count()
-        assigned_role = "admin" if org_user_count == 0 else (req_body.role or "analyst")
+        assigned_role = "customer"
         # Provision new Google OAuth user
         user = User(
             email=google_email,
             hashed_password=get_password_hash(os.urandom(24).hex()),
             full_name=google_name,
             role=assigned_role,
+            is_admin=False,
             provider="google",
             organization_id=org_id,
             last_active=datetime.utcnow(),

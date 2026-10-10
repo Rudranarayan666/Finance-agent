@@ -19,7 +19,7 @@ import {
 import { api } from '../services/api';
 import PdfSourceViewer from './PdfSourceViewer';
 
-export default function RagChat({ documentId, companyName, user, onInspectCitation, onDocumentUploaded }) {
+export default function RagChat({ documentId, companyName, user, onInspectCitation, onDocumentUploaded, onRefreshCredits }) {
   const [messages, setMessages] = useState([]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -33,8 +33,7 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  const isViewer = user && user.role === 'viewer';
-  const isAdmin = user && user.role === 'admin';
+
 
   useEffect(() => {
     setMessages([
@@ -58,11 +57,6 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
   }, [messages, isLoading, uploadStatus]);
 
   const handleFileAttach = async (e) => {
-    if (isViewer) {
-      alert('Security Policy: Portfolio Viewers do not have document upload permissions.');
-      return;
-    }
-
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = '';
@@ -113,10 +107,7 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
   };
 
   const handleSend = async (questionToSend) => {
-    if (isViewer) {
-      alert('Access Denied: AI Chatbot research queries require Analyst or Admin role clearance.');
-      return;
-    }
+
 
     const q = (typeof questionToSend === 'string' ? questionToSend : inputQuestion).trim();
     if (!q || isLoading || !documentId) return;
@@ -137,6 +128,8 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
           confidence: response.confidence
         }
       ]);
+      // Refresh credits in real-time after deduction
+      if (onRefreshCredits) onRefreshCredits();
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -208,11 +201,6 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
                 <span className="neo-badge-yellow text-[9px]">
                   RRF RERANKED
                 </span>
-                {isAdmin && (
-                  <span className="neo-badge text-[9px] bg-[#FFF9C4]">
-                    ADMIN UNRESTRICTED
-                  </span>
-                )}
               </div>
               <p className="text-[11px] text-zinc-600 truncate max-w-sm sm:max-w-none">
                 Scope: <strong className="text-black">{companyName || 'Active Corporate Filing'}</strong>
@@ -221,18 +209,16 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
           </div>
 
           <div className="flex items-center space-x-2">
-            {!isViewer && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingFile}
-                className="neo-button-primary text-[11px] py-1 px-3"
-                title="Upload PDF into Chat"
-              >
-                <Paperclip className="w-3.5 h-3.5 stroke-[2.5]" />
-                <span>UPLOAD PDF</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingFile}
+              className="neo-button-primary text-[11px] py-1 px-3"
+              title="Upload PDF into Chat"
+            >
+              <Paperclip className="w-3.5 h-3.5 stroke-[2.5]" />
+              <span>UPLOAD PDF</span>
+            </button>
           </div>
         </div>
 
@@ -271,22 +257,8 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
         )}
       </div>
 
-      {/* Viewer Warning if restricted */}
-      {isViewer && (
-        <div className="p-2.5 bg-[#FEF3C7] border-2 border-black text-xs space-y-1">
-          <div className="flex items-center gap-1.5 font-black text-amber-950 text-xs uppercase">
-            <Lock className="w-4 h-4 stroke-[2.5]" />
-            <span>ROLE RESTRICTION: VIEWER ACCOUNT</span>
-          </div>
-          <p className="text-xs text-amber-900 font-sans font-medium">
-            AI research chat queries are limited to Analyst and Admin clearance. Contact your administrator or switch to the Analyst demo preset to query.
-          </p>
-        </div>
-      )}
-
       {/* Quick Suggested Question Chips */}
-      {!isViewer && (
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
           <span className="text-zinc-800 font-black text-xs uppercase flex-shrink-0 mr-1 hidden sm:inline">
             SUGGESTIONS:
           </span>
@@ -302,7 +274,6 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
             </button>
           ))}
         </div>
-      )}
 
       {/* Chat Messages */}
       <div className="space-y-3 flex-1 overflow-y-auto pr-1">
@@ -441,26 +412,24 @@ export default function RagChat({ documentId, companyName, user, onInspectCitati
               type="text"
               value={inputQuestion}
               onChange={(e) => setInputQuestion(e.target.value)}
-              placeholder={isViewer ? "Chat query restricted for Viewer accounts..." : "Ask specific financial question (e.g. revenue, net profit, cash flows, risks)..."}
-              disabled={isLoading || isUploadingFile || isViewer}
+              placeholder="Ask specific financial question (e.g. revenue, net profit, cash flows, risks)..."
+              disabled={isLoading || isUploadingFile}
               className="neo-input pr-9 text-xs"
             />
-            {!isViewer && (
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingFile}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-black transition"
-                title="Attach PDF"
-              >
-                <Paperclip className="w-4 h-4 stroke-[2.5]" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingFile}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-black transition"
+              title="Attach PDF"
+            >
+              <Paperclip className="w-4 h-4 stroke-[2.5]" />
+            </button>
           </div>
 
           <button
             type="submit"
-            disabled={!inputQuestion.trim() || isLoading || isUploadingFile || isViewer}
+            disabled={!inputQuestion.trim() || isLoading || isUploadingFile}
             className="neo-button-primary py-2 px-4 text-xs font-black"
           >
             {isLoading ? (

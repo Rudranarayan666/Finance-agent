@@ -22,13 +22,22 @@ import ReportsView from './components/ReportsView';
 import AuditLogsView from './components/AuditLogsView';
 import TeamView from './components/TeamView';
 import SettingsView from './components/SettingsView';
+import PricingView from './components/PricingView';
+import AdminPlatformView from './components/AdminPlatformView';
+import PlanSelectionModal from './components/PlanSelectionModal';
+import UpgradeModal from './components/UpgradeModal';
 import { api } from './services/api';
 
 export default function App() {
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'documents', 'analysis', 'research', 'reports', 'audit-logs', 'team', 'settings'
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'documents', 'analysis', 'research', 'reports', 'pricing', 'admin-platform', 'audit-logs', 'team', 'settings'
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
+  // SaaS Subscription & Credits State
+  const [creditData, setCreditData] = useState(null);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [upgradeModalState, setUpgradeModalState] = useState(null);
+
   // Documents & Active Analysis State
   const [documents, setDocuments] = useState([]);
   const [activeDocument, setActiveDocument] = useState(null);
@@ -47,6 +56,57 @@ export default function App() {
   const [shareEmail, setShareEmail] = useState('');
   const [shareWithEntireOrg, setShareWithEntireOrg] = useState(false);
 
+  // Auth Modal State & Plan Pre-selection
+  const [authMode, setAuthMode] = useState('login');
+  const [pendingPlan, setPendingPlan] = useState(null);
+
+  const handleOpenAuth = (mode = 'login', plan = null) => {
+    setAuthMode(mode);
+    setPendingPlan(plan);
+    setIsAuthModalOpen(true);
+  };
+
+  const fetchCredits = async () => {
+    if (!api.token) return;
+    try {
+      const data = await api.getMyCredits();
+      setCreditData(data);
+      return data;
+    } catch (err) {
+      console.warn('Credits fetch error:', err);
+      return null;
+    }
+  };
+
+  const handleLimitError = (err) => {
+    const msg = typeof err === 'string' ? err : (err?.message || '');
+    if (msg.includes('DOCUMENT_LIMIT_REACHED') || msg.toLowerCase().includes('document limit')) {
+      setUpgradeModalState({
+        reason: 'DOCUMENT_LIMIT',
+        message: msg,
+        planName: creditData?.subscription?.plan_name || user?.subscription?.plan_name || 'Basic'
+      });
+      return true;
+    }
+    if (msg.includes('INSUFFICIENT_CREDITS') || msg.toLowerCase().includes('insufficient credit')) {
+      setUpgradeModalState({
+        reason: 'INSUFFICIENT_CREDITS',
+        message: msg,
+        planName: creditData?.subscription?.plan_name || user?.subscription?.plan_name || 'Basic'
+      });
+      return true;
+    }
+    if (msg.includes('QUESTION_CAP_REACHED') || msg.toLowerCase().includes('question cap') || msg.toLowerCase().includes('question limit')) {
+      setUpgradeModalState({
+        reason: 'QUESTION_LIMIT',
+        message: msg,
+        planName: creditData?.subscription?.plan_name || user?.subscription?.plan_name || 'Basic'
+      });
+      return true;
+    }
+    return false;
+  };
+
   // 1. Initial Load: Check token & get current user
   useEffect(() => {
     const initAuth = async () => {
@@ -54,7 +114,20 @@ export default function App() {
         try {
           const u = await api.getCurrentUser();
           setUser(u);
+          const credits = await fetchCredits();
           await loadDocuments();
+
+          // Check if user requires plan selection
+          const isAdmin = u.is_admin || u.role === 'admin';
+          const hasExistingPlan = Boolean(
+            u.has_subscription || 
+            u.plan_key || 
+            (u.subscription && u.subscription.plan_id) || 
+            credits?.plan_key
+          );
+          if (!isAdmin && !hasExistingPlan) {
+            setShowPlanModal(true);
+          }
         } catch (err) {
           api.setToken(null);
           setUser(null);
@@ -62,21 +135,48 @@ export default function App() {
       }
     };
     initAuth();
+
+    const handleOpenPricing = () => setActiveTab('pricing');
+    window.addEventListener('open-pricing', handleOpenPricing);
+    return () => window.removeEventListener('open-pricing', handleOpenPricing);
   }, []);
 
-  const handleLoginSuccess = (loggedInUser) => {
+  const handleLoginSuccess = async (loggedInUser) => {
     setUser(loggedInUser);
     setIsAuthModalOpen(false);
-    loadDocuments();
 
-    // Role-based initial navigation:
-    if (loggedInUser.role === 'admin') {
-      setActiveTab('dashboard');
-    } else if (loggedInUser.role === 'viewer') {
-      setActiveTab('documents');
-    } else {
-      setActiveTab('dashboard');
+    const isAdmin = loggedInUser.is_admin || loggedInUser.role === 'admin';
+    if (isAdmin) {
+      await fetchCredits();
+      await loadDocuments();
+      setActiveTab('admin-platform');
+      return;
     }
+
+    if (pendingPlan) {
+      try {
+        await api.selectPlan(pendingPlan);
+      } catch (err) {
+        console.warn('Auto plan selection error:', err);
+      }
+      setPendingPlan(null);
+    }
+
+    const credits = await fetchCredits();
+    const updatedUser = await api.getCurrentUser().catch(() => loggedInUser);
+    setUser(updatedUser);
+    await loadDocuments();
+
+    const hasExistingPlan = Boolean(
+      updatedUser.has_subscription || 
+      updatedUser.plan_key || 
+      (updatedUser.subscription && updatedUser.subscription.plan_id) || 
+      credits?.plan_key
+    );
+    if (!hasExistingPlan) {
+      setShowPlanModal(true);
+    }
+    setActiveTab('dashboard');
   };
 
   const loadDocuments = async () => {
@@ -151,8 +251,11 @@ export default function App() {
 
   const handleDocumentUploaded = async (newDoc) => {
     await loadDocuments();
+    await fetchCredits();
     setAnalysisResult(null);
     setActiveDocument(newDoc);
+    // Re-fetch after 2s to catch async ledger write (backend may commit after response)
+    setTimeout(fetchCredits, 2000);
 
     try {
       setIsProcessing(true);
@@ -161,7 +264,9 @@ export default function App() {
       startPolling(newDoc.id);
       setActiveTab('analysis');
     } catch (err) {
-      alert(err.message || 'Failed to trigger analysis');
+      if (!handleLimitError(err)) {
+        alert(err.message || 'Failed to trigger analysis');
+      }
       setIsProcessing(false);
     }
   };
@@ -174,7 +279,9 @@ export default function App() {
       startPolling(docId);
       setActiveTab('analysis');
     } catch (err) {
-      alert(err.message || 'Failed to trigger analysis');
+      if (!handleLimitError(err)) {
+        alert(err.message || 'Failed to trigger analysis');
+      }
       setIsProcessing(false);
     }
   };
@@ -188,7 +295,8 @@ export default function App() {
         setActiveDocument(null);
         setAnalysisResult(null);
       }
-      loadDocuments();
+      await loadDocuments();
+      await fetchCredits();
     } catch (err) {
       alert(err.message || 'Failed to delete document');
     }
@@ -221,22 +329,6 @@ export default function App() {
     }
   };
 
-  const handlePresetLogin = (role) => {
-    const email = role === 'admin' 
-      ? 'admin@finance.corp' 
-      : role === 'analyst' 
-        ? 'analyst@equity.corp' 
-        : 'viewer@client.corp';
-    const mockUser = {
-      id: `usr_${role}_001`,
-      email,
-      name: role.toUpperCase() + ' User',
-      role,
-      token: 'demo-token-' + role,
-      authProvider: 'local'
-    };
-    handleLoginSuccess(mockUser);
-  };
 
   const handleLogout = () => {
     api.setToken(null);
@@ -253,17 +345,21 @@ export default function App() {
           onLogout={() => {}}
           activeTab="landing"
           setActiveTab={() => {}}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenAuth={handleOpenAuth}
         />
 
         <PublicLanding 
-          onOpenAuth={() => setIsAuthModalOpen(true)}
-          onSelectRolePreset={handlePresetLogin}
+          onOpenAuth={handleOpenAuth}
         />
 
         <AuthModal
           isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
+          initialMode={authMode}
+          selectedPlan={pendingPlan}
+          onClose={() => {
+            setIsAuthModalOpen(false);
+            setPendingPlan(null);
+          }}
           onLoginSuccess={handleLoginSuccess}
         />
       </div>
@@ -280,8 +376,10 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         onLogout={handleLogout}
-        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onOpenAuth={handleOpenAuth}
         onSwitchPresetRole={handleSwitchPresetRole}
+        creditData={creditData}
+        onRefreshCredits={fetchCredits}
       />
 
       {/* Main Workspace Container */}
@@ -345,6 +443,7 @@ export default function App() {
             onInspectCitation={(c) => setInspectingCitation(c)}
             onDocumentUploaded={handleDocumentUploaded}
             onNavigate={(tab) => setActiveTab(tab)}
+            onRefreshCredits={fetchCredits}
           />
         )}
 
@@ -357,20 +456,41 @@ export default function App() {
             analysisResult={analysisResult}
             selectDocument={selectDocument}
             onInspectCitation={(c) => setInspectingCitation(c)}
+            subscription={creditData?.subscription || user?.subscription}
+            onUpgradeClick={(data) => setUpgradeModalState(data)}
           />
         )}
 
-        {/* VIEW 6: AUDIT COMPLIANCE LOGS (ADMIN ONLY) */}
-        {activeTab === 'audit-logs' && user.role === 'admin' && (
+        {/* VIEW 6: PLANS & PRICING */}
+        {activeTab === 'pricing' && (
+          <PricingView
+            user={user}
+            creditData={creditData}
+            onPlanUpgraded={async () => {
+              await fetchCredits();
+              const u = await api.getCurrentUser();
+              setUser(u);
+              await loadDocuments();
+            }}
+          />
+        )}
+
+        {/* VIEW 7: DEDICATED ADMIN PLATFORM (ADMIN ONLY) */}
+        {activeTab === 'admin-platform' && (user.is_admin || user.role === 'admin') && (
+          <AdminPlatformView user={user} />
+        )}
+
+        {/* VIEW 8: AUDIT COMPLIANCE LOGS (ADMIN ONLY) */}
+        {activeTab === 'audit-logs' && (user.is_admin || user.role === 'admin') && (
           <AuditLogsView user={user} />
         )}
 
-        {/* VIEW 7: TEAM MEMBER PROVISIONING (ADMIN ONLY) */}
-        {activeTab === 'team' && user.role === 'admin' && (
+        {/* VIEW 9: TEAM MEMBER PROVISIONING (ADMIN ONLY) */}
+        {activeTab === 'team' && (user.is_admin || user.role === 'admin') && (
           <TeamView user={user} />
         )}
 
-        {/* VIEW 8: SYSTEM & ACCOUNT SETTINGS */}
+        {/* VIEW 10: SYSTEM & ACCOUNT SETTINGS */}
         {activeTab === 'settings' && (
           <SettingsView user={user} onLogout={handleLogout} />
         )}
@@ -484,8 +604,47 @@ export default function App() {
       {/* Auth Modal triggered from Landing or Navbar */}
       <AuthModal
         isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
+        initialMode={authMode}
+        selectedPlan={pendingPlan}
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingPlan(null);
+        }}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      {/* SaaS Customer Onboarding Plan Selection Modal */}
+      <PlanSelectionModal
+        isOpen={showPlanModal}
+        user={user}
+        onClose={() => setShowPlanModal(false)}
+        onBackToLanding={() => {
+          setShowPlanModal(false);
+          handleLogout();
+        }}
+        onPlanSelected={async (sub) => {
+          setShowPlanModal(false);
+          await fetchCredits();
+          const u = await api.getCurrentUser().catch(() => user);
+          setUser(u);
+          await loadDocuments();
+          setActiveTab('dashboard');
+        }}
+      />
+
+      {/* SaaS Usage / Limit Upgrade Modal */}
+      <UpgradeModal
+        isOpen={!!upgradeModalState}
+        onClose={() => setUpgradeModalState(null)}
+        reason={upgradeModalState?.reason}
+        message={upgradeModalState?.message}
+        currentUsage={upgradeModalState?.currentUsage}
+        limitValue={upgradeModalState?.limitValue}
+        planName={upgradeModalState?.planName}
+        onUpgrade={() => {
+          setUpgradeModalState(null);
+          setActiveTab('pricing');
+        }}
       />
 
     </div>

@@ -174,7 +174,157 @@ class ApiService {
     return this.request('/chat/security/feed');
   }
 
-  // Admin
+  // SaaS Plans & Subscriptions
+  async getPlans() {
+    return this.request('/plans');
+  }
+
+  async getCurrentSubscription() {
+    return this.request('/subscriptions/me');
+  }
+
+  async selectPlan(planKey) {
+    const cleanKey = (planKey || 'basic').toLowerCase();
+    if (cleanKey === 'basic') {
+      return this.request('/subscriptions/select-plan', {
+        method: 'POST',
+        body: JSON.stringify({ plan_key: cleanKey })
+      });
+    }
+    return this.request('/subscriptions/activate-tier', {
+      method: 'POST',
+      body: JSON.stringify({ plan_key: cleanKey })
+    });
+  }
+
+  async activateTierDirect(planKey) {
+    return this.request('/subscriptions/activate-tier', {
+      method: 'POST',
+      body: JSON.stringify({ plan_key: (planKey || 'basic').toLowerCase() })
+    });
+  }
+
+  async checkoutSubscription(planKey) {
+    return this.request('/subscriptions/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ plan_key: planKey })
+    });
+  }
+
+  async verifyPayment(orderId, paymentId, signature, planKey) {
+    return this.request('/subscriptions/verify-payment', {
+      method: 'POST',
+      body: JSON.stringify({
+        order_id: orderId,
+        payment_id: paymentId,
+        signature,
+        plan_key: planKey
+      })
+    });
+  }
+
+  async cancelSubscription() {
+    return this.request('/subscriptions/cancel', {
+      method: 'POST'
+    });
+  }
+
+  // SaaS Credits & Usage
+  async getCreditStatus() {
+    return this.request('/credits/me');
+  }
+
+  async getCreditTransactions(limit = 50) {
+    return this.request(`/credits/transactions?limit=${limit}`);
+  }
+
+  async getUserUsage(limit = 50) {
+    return this.request(`/usage/me?limit=${limit}`);
+  }
+
+  // Report Download (Pro & Premium)
+  async downloadReport(docId, filename = 'report.pdf') {
+    const url = `${API_BASE}/documents/${docId}/report/download`;
+    const headers = {};
+    if (this.token) headers['Authorization'] = `Bearer ${this.token}`;
+
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: 'Failed to download report' }));
+      throw new Error(err.detail?.message || err.detail || 'Download failed');
+    }
+    const blob = await res.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(blobUrl);
+    document.body.removeChild(a);
+  }
+
+  // Admin Operations
+  async getAdminOverview() {
+    return this.request('/admin/overview');
+  }
+
+  async getAdminUsers(query = '', planKey = '') {
+    const params = new URLSearchParams();
+    if (query) params.append('query', query);
+    if (planKey) params.append('plan_key', planKey);
+    return this.request(`/admin/users?${params.toString()}`);
+  }
+
+  async getAdminUserDetails(userId) {
+    return this.request(`/admin/users/${userId}`);
+  }
+
+  async adjustUserCredits(userId, amount, reason) {
+    return this.request(`/admin/users/${userId}/credits/adjust`, {
+      method: 'POST',
+      body: JSON.stringify({ amount: Number(amount), reason })
+    });
+  }
+
+  async changeUserPlanAdmin(userId, planKey) {
+    return this.request(`/admin/users/${userId}/plan`, {
+      method: 'POST',
+      body: JSON.stringify({ plan_key: planKey })
+    });
+  }
+
+  async suspendUser(userId) {
+    return this.request(`/admin/users/${userId}/suspend`, {
+      method: 'POST'
+    });
+  }
+
+  async activateUser(userId) {
+    return this.request(`/admin/users/${userId}/activate`, {
+      method: 'POST'
+    });
+  }
+
+  async getAdminDocuments(query = '', statusFilter = '') {
+    const params = new URLSearchParams();
+    if (query) params.append('query', query);
+    if (statusFilter) params.append('status_filter', statusFilter);
+    return this.request(`/admin/documents?${params.toString()}`);
+  }
+
+  async adminReindexDocument(docId) {
+    return this.request(`/admin/documents/${docId}/reindex`, {
+      method: 'POST'
+    });
+  }
+
+  async adminDeleteDocument(docId) {
+    return this.request(`/admin/documents/${docId}`, {
+      method: 'DELETE'
+    });
+  }
+
   async listUsers() {
     return this.request('/admin/users');
   }

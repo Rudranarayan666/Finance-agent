@@ -58,9 +58,9 @@ export default function SettingsView({ user, onLogout }) {
             </div>
 
             <div>
-              <span className="text-zinc-800 font-black block uppercase text-xs">ASSIGNED ROLE:</span>
-              <span className="neo-badge bg-[#FFE600] text-black mt-1">
-                {user?.role?.toUpperCase() || 'ANALYST'}
+              <span className="text-zinc-800 font-black block uppercase text-xs">WORKSPACE PLAN:</span>
+              <span className="neo-badge bg-[#FFE600] text-black mt-1 uppercase">
+                {user?.plan_name || 'BASIC CUSTOMER'}
               </span>
             </div>
 
@@ -146,53 +146,53 @@ export default function SettingsView({ user, onLogout }) {
         </div>
       </div>
 
-      {/* Role-Based Access Control (RBAC) Reference Table */}
+      {/* Subscription Plan Quotas & Capabilities Matrix */}
       <div className="space-y-3">
         <h2 className="text-base font-black text-black flex items-center gap-2">
-          <Lock className="w-5 h-5 stroke-[2.5]" />
-          <span>ROLE-BASED ACCESS CONTROL (RBAC) PRIVILEGE MATRIX</span>
+          <Zap className="w-5 h-5 stroke-[2.5]" />
+          <span>WORKSPACE PLAN CAPACITIES &amp; FEATURE MATRIX</span>
         </h2>
 
         <div className="bg-white border-2 border-black shadow-[4px_4px_0px_0px_#000] overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="w-full text-left font-mono">
             <thead>
               <tr>
-                <th className="neo-table-header">Action / Capability</th>
-                <th className="neo-table-header">ADMIN Role</th>
-                <th className="neo-table-header">ANALYST Role</th>
-                <th className="neo-table-header">VIEWER Role</th>
+                <th className="neo-table-header">Feature / Quota</th>
+                <th className="neo-table-header">BASIC (Free)</th>
+                <th className="neo-table-header">PRO (₹299/mo)</th>
+                <th className="neo-table-header">PREMIUM (₹799/mo)</th>
               </tr>
             </thead>
             <tbody>
               <tr className="hover:bg-yellow-50/50">
-                <td className="neo-table-cell font-bold text-black">Organization Management &amp; Teammate Invites</td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">DENIED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">DENIED</span></td>
+                <td className="neo-table-cell font-bold text-black">Active Filing Documents</td>
+                <td className="neo-table-cell font-bold text-zinc-700">2 Documents</td>
+                <td className="neo-table-cell font-bold text-zinc-900">10 Documents</td>
+                <td className="neo-table-cell font-bold text-black">50 Documents</td>
               </tr>
               <tr className="hover:bg-yellow-50/50">
-                <td className="neo-table-cell font-bold text-black">Access Immutable Compliance Audit Logs</td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">DENIED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">DENIED</span></td>
+                <td className="neo-table-cell font-bold text-black">Monthly Compute Credits</td>
+                <td className="neo-table-cell font-bold text-zinc-700">100 credits/mo</td>
+                <td className="neo-table-cell font-bold text-zinc-900">500 credits/mo</td>
+                <td className="neo-table-cell font-bold text-black">2,000 credits/mo</td>
               </tr>
               <tr className="hover:bg-yellow-50/50">
-                <td className="neo-table-cell font-bold text-black">Upload Filing PDFs &amp; Trigger Analysis</td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">DENIED</span></td>
+                <td className="neo-table-cell font-bold text-black">RAG Questions per Filing</td>
+                <td className="neo-table-cell font-bold text-zinc-700">5 questions cap</td>
+                <td className="neo-table-cell font-bold text-zinc-900">10 questions cap</td>
+                <td className="neo-table-cell font-bold text-black">20 questions cap</td>
               </tr>
               <tr className="hover:bg-yellow-50/50">
-                <td className="neo-table-cell font-bold text-black">Interactive RAG AI Research &amp; Chat</td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">BLOCKED</span></td>
+                <td className="neo-table-cell font-bold text-black">Multi-Year Filing Comparisons</td>
+                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">NO</span></td>
+                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">INCLUDED</span></td>
+                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">INCLUDED</span></td>
               </tr>
               <tr className="hover:bg-yellow-50/50">
-                <td className="neo-table-cell font-bold text-black">View Extracted Metrics &amp; Download Reports</td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
-                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">ALLOWED</span></td>
+                <td className="neo-table-cell font-bold text-black">Executive Report Downloads (PDF/JSON)</td>
+                <td className="neo-table-cell"><span className="neo-badge bg-[#FF6B6B] text-black">LOCKED</span></td>
+                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">UNLIMITED</span></td>
+                <td className="neo-table-cell"><span className="neo-badge bg-[#BBF7D0] text-black">UNLIMITED</span></td>
               </tr>
             </tbody>
           </table>

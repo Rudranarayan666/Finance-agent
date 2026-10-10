@@ -1,46 +1,41 @@
 # System Architecture Specification
 
-## 🏛️ FinanceAgent: Enterprise Financial Report Analyzer
+## 🏛️ FinanceAgent: Enterprise Financial Report Analyzer & SaaS Platform
 
-**Document Version:** 1.0.0  
+**Document Version:** 2.1.0  
 **Status:** Approved / Production Architecture  
-**Target System:** FinanceAgent v1.0 Enterprise Edition  
-**Last Updated:** September 2026  
+**Target System:** FinanceAgent Enterprise SaaS  
+**Last Updated:** October 2026  
 
 ---
 
-## 1. Executive Architecture Overview
+## 1. Executive Architectural Overview & Dual-Plane Philosophy
 
-**FinanceAgent** is designed as a **zero-trust, deterministic multi-agent platform** tailored for audit-grade extraction, verification, and analysis of 80 to 250+ page corporate financial filings (SEC Form 10-Q, 10-K, and International Annual Reports).
+**FinanceAgent** is an audit-grade financial intelligence platform specifically engineered to ingest, verify, analyze, and visualize complex corporate earnings reports (SEC Form 10-K, 10-Q, and International Annual Reports up to 250+ pages).
 
-### Core Design Philosophy: Deterministic Boundary Control
-Conventional LLM architectures fail in financial analysis due to numerical hallucinations, context truncation, and non-verifiable citations. FinanceAgent solves this by establishing a strict separation of concerns:
-- **LLM Role**: Restricted solely to candidate extraction, semantic intent resolution, and natural language synthesis.
-- **Deterministic Engine Role**: Handles 100% of numerical validations, verbatim substring matching against raw PDF text, source conflict reconciliations, margin/YoY arithmetic, and cryptographic hash verification **strictly outside the LLM**.
+Conventional AI systems fail in corporate finance due to three systemic vulnerabilities:
+1. **Numerical Hallucination**: Generative models blend historical numbers or invent plausible statistics.
+2. **Context Window Truncation**: High-density financial tables buried on pages 80–220 are truncated by fixed-length chunkers.
+3. **Cascading Agent Failures**: Complex multi-agent workflows crash when an upstream LLM returns malformed JSON or times out.
+
+FinanceAgent overcomes these failure modes by enforcing a **Dual-Plane Architecture**:
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│                             USER INTERFACE                               │
-│        React 18 + Vite 5 + Recharts SHAP Waterfall + Mobile UX           │
-└────────────────────────────────────┬─────────────────────────────────────┘
-                                     │ REST APIs / JWT Auth
-┌────────────────────────────────────▼─────────────────────────────────────┐
-│                      FASTAPI ENTERPRISE GATEWAY                          │
-│          Multi-Tenant RBAC | Security Scanner | Audit Logging            │
-└───────────┬────────────────────────┬────────────────────────┬────────────┘
-            │                        │                        │
-┌───────────▼───────────┐┌───────────▼───────────┐┌───────────▼───────────┐
-│ INGESTION & SECURITY  ││  LANGGRAPH SUPERVISOR ││ DOCUMENT RAG & CHAT   │
-│ Magic Byte Scanner    ││  Multi-Agent Core     ││ BM25 Token Search     │
-│ Anti-Malware Vector   ││  Density Scorer       ││ Synonym Expansion    │
-│ SHA-256 Hash Seal     ││  Specialist Agents    ││ In-Chat PDF Attachment│
-└───────────┬───────────┘└───────────┬───────────┘└───────────┬───────────┘
-            │                        │                        │
-┌───────────▼────────────────────────▼────────────────────────▼───────────┐
-│                     DETERMINISTIC GROUNDING BOUNDARY                    │
-│   Verbatim Substring Matcher | Arithmetic Engine | Conflict Reconciliation │
-└──────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        PROBABILISTIC CANDIDATE PLANE (LLMs)                            │
+│  • Section Locator Agent        • Financial Extractor Agent  • Guidance & Risks Agent  │
+│  • LangGraph Supervisor DAG     • Semantic RAG Synthesis     • User Intent Classifier  │
+└───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                            │ Candidate Claims, Quotes, Metric Tuples
+┌───────────────────────────────────────────▼────────────────────────────────────────────┐
+│                    DETERMINISTIC VERIFICATION PLANE (Python + DuckDB)                  │
+│  • Verbatim Substring Matcher   • In-Memory DuckDB OLAP SQL  • RRF Fusion Engine       │
+│  • Mathematical SHAP Game Theory• Atomic Credit Ledger       • SHA-256 Cryptographic Seal│
+└────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+- **Candidate Generation (Probabilistic)**: LLMs propose metric candidates, draft summaries, and handle queries.
+- **Verification & Execution (100% Deterministic)**: All calculations, page citation checks, tabular cross-checks, credit debits, and substring matches execute in pure Python algorithms and in-memory DuckDB outside the LLM.
 
 ---
 
@@ -48,153 +43,254 @@ Conventional LLM architectures fail in financial analysis due to numerical hallu
 
 ```mermaid
 flowchart TD
-    subgraph CLIENT ["Frontend Layer (React 18 + Vite)"]
-        UI[Enterprise Dashboard & Mobile View]
-        SHAP[Recharts SHAP Waterfall Engine]
-        CHAT[In-Chat PDF Attachment & RAG Panel]
-        3D[Three.js Contained Hero Constellation]
+    subgraph CLIENT ["Frontend Layer (React 18 + Vite 5 + Tailwind)"]
+        UI[Executive SaaS Dashboard]
+        SHAP_CHART[Explainable AI SHAP Ranking Chart]
+        RAG_CHAT[Grounded Research Chat & In-Chat PDF]
+        CREDIT_METER[Real-Time Credit & Usage Meter]
     end
 
-    subgraph API_GATEWAY ["API Gateway & Security Layer (FastAPI)"]
-        AUTH[Auth Endpoint: OAuth 2.0 & JWT]
-        RBAC{Tenant & Role Validator}
-        SEC[SecurityScanner & Anti-Malware Engine]
-        AUDIT[Filterable Enterprise Audit Logger]
+    subgraph GATEWAY ["API Gateway & Security Layer (FastAPI)"]
+        AUTH[JWT / OAuth 2.0 Auth Gate]
+        MALWARE[Anti-Malware Scanner: /JavaScript & /Launch Check]
+        SEAL[SHA-256 Cryptographic Seal Generator]
+        LEDGER_SVC[Atomic Credit Accounting Ledger]
     end
 
-    subgraph INGESTION ["Document Pipeline (PyMuPDF)"]
-        PARSE[PyMuPDF Structure & Text Extractor]
-        SEAL[SHA-256 Blockchain Hash Generator]
+    subgraph INGESTION ["Document Pipeline (PyMuPDF + DuckDB)"]
+        PARSER[PyMuPDF Structure & Text Extractor]
+        DUCK[In-Memory DuckDB Analytical Engine]
+        CHUNKER[Page-Anchored Table Preserving Chunker]
     end
 
-    subgraph AGENT_CORE ["Multi-Agent Supervisor Engine (LangGraph)"]
-        SUP[Supervisor Orchestrator Node]
-        DENSITY[Section Density Scorer]
-        
-        FIN[Financial Extraction Agent]
-        GUIDE[Guidance & Outlook Agent]
-        RISK[Risk Factors Agent]
-        INTERP[Grounded Summary Agent]
+    subgraph RETRIEVAL ["Hybrid Multimodal RAG Engine"]
+        BM25_IDX[(Sparse BM25 Index + Synonym Matrix)]
+        VECTOR_IDX[(Dense Embedding Vector Store)]
+        RRF_FUSION[Reciprocal Rank Fusion RRF k=60]
     end
 
-    subgraph GROUNDING ["Deterministic Verification Engine (Python)"]
-        SUBSTRING[Verbatim Substring Matcher]
-        RECON[Source Conflict Reconciliation Engine]
-        ARITH[Arithmetic Engine: YoY & Margins]
+    subgraph AGENT_CORE ["LangGraph Multi-Agent Supervisor Engine"]
+        SUPERVISOR[Supervisor Orchestrator Node]
+        LOCATOR[Statement Density Locator Agent]
+        EXTRACTOR[Financial Statement Extractor Agent]
+        AUDITOR[Verbatim Substring Auditor Agent]
+        FALLBACK_HEURISTIC[Deterministic Table Fallback Scanner]
     end
 
-    subgraph STORAGE ["Persistence Layer"]
-        DB[(SQLAlchemy Relational DB)]
-        CHROMA[(Document BM25 Vector Store)]
-    end
-
-    UI --> API_GATEWAY
-    AUTH --> RBAC
-    RBAC --> SEC
-    SEC -->|Clean PDF| SEAL
-    SEAL --> PARSE
-    PARSE --> SUP
-
-    SUP --> DENSITY
-    DENSITY --> FIN & GUIDE & RISK
-    FIN & GUIDE & RISK --> GROUNDING
-    GROUNDING --> INTERP
-    INTERP --> UI
-
-    CHAT --> CHROMA
-    API_GATEWAY --> AUDIT --> DB
+    UI --> GATEWAY
+    AUTH --> MALWARE
+    MALWARE --> SEAL
+    SEAL --> PARSER
+    PARSER --> DUCK & CHUNKER
+    CHUNKER --> BM25_IDX & VECTOR_IDX
+    
+    PARSER --> SUPERVISOR
+    SUPERVISOR --> LOCATOR --> EXTRACTOR --> AUDITOR
+    AUDITOR -- Substring Failure --> FALLBACK_HEURISTIC
+    AUDITOR -- Verified --> DUCK
+    
+    RAG_CHAT --> BM25_IDX & VECTOR_IDX
+    BM25_IDX & VECTOR_IDX --> RRF_FUSION --> RAG_CHAT
+    GATEWAY --> LEDGER_SVC
 ```
 
 ---
 
-## 3. Subsystem Breakdown
+## 3. Mathematical Hybrid RAG (Dense + BM25 + Reciprocal Rank Fusion)
 
-### 3.1 Enterprise Auth, RBAC & Multi-Tenant Governance
-* **Authentication**: Supports standard username/password credentials alongside Google Workspace OAuth (`/api/v1/auth/google`).
-* **JWT Security**: Issues signed RS256/HS256 Bearer JWTs containing `user_id`, `role`, and `organization_id`.
-* **RBAC Tiers**:
-  * `ADMIN`: User provisioning, teammate invitations (`/api/v1/admin/invite`), organization settings, filterable audit trails.
-  * `ANALYST`: PDF upload, analysis execution, RAG Q&A, scorecards, SHAP waterfall inspection.
-  * `VIEWER`: Read-only access to pre-computed document scorecards and audit receipts.
-* **Tenant Isolation**: Every database query is scoped by `organization_id` (`FinanceCorp Global`) to prevent cross-tenant data leaks.
-* **Filterable Audit Trails**: Real-time logging of user actions with filtering by user email, action type (`DOCUMENT_UPLOAD`, `ANALYSIS_RUN`), and document ID.
+The document research engine avoids the weaknesses of pure vector search (which misses exact numerical codes or ticker symbols) and pure lexical search (which misses conceptual synonyms) by executing a **Hybrid Reciprocal Rank Fusion (RRF)** pipeline.
 
-### 3.2 Security Validation & Ingestion Pipeline
-* **Magic Byte Verification**: Pre-parsing validation of `%PDF-1.x` magic bytes to reject disguised non-PDF binaries.
-* **Anti-Malware Vector Scanner**: Scans PDF byte streams for malicious active script keys (`/JavaScript`, `/Launch`, `/EmbeddedFiles`, `/URI`) before passing bytes to the text extraction pipeline.
-* **SHA-256 Blockchain Cryptographic Seal**: Generates a deterministic SHA-256 fingerprint for every uploaded filing, assigning an immutable status (`VERIFIED_IMMUTABLE`) to guarantee tamper evidence.
-* **PyMuPDF Parsing**: High-performance text, coordinate, and tabular extraction across 250+ page filings in under 2 seconds.
+### 3.1 Sparse Lexical BM25 Formulation
+Lexical scoring indexes all page chunks using BM25 with dynamic financial synonym expansion:
+$$\text{Score}_{\text{BM25}}(D, Q) = \sum_{i=1}^n \text{IDF}(q_i) \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}$$
+Where:
+- $\text{IDF}(q_i) = \ln \left( \frac{N - n(q_i) + 0.5}{n(q_i) + 0.5} + 1 \right)$
+- $k_1 = 1.5$ regulates term frequency saturation.
+- $b = 0.75$ controls document length normalization against average chunk length $\text{avgdl}$.
+- **Synonym Expander**: Query token $q_i$ is mapped across an equivalence matrix:
+  $$\begin{aligned}
+  \mathcal{T}(\text{PAT}) &= \{\text{Profit After Tax}, \text{Net Profit}, \text{Net Income}, \text{Earnings}\} \\
+  \mathcal{T}(\text{EBITDA}) &= \{\text{Operating Profit}, \text{Operating Earnings}, \text{EBIT}\} \\
+  \mathcal{T}(\text{Topline}) &= \{\text{Revenue}, \text{Turnover}, \text{Gross Revenue}, \text{Net Sales}\}
+  \end{aligned}$$
+
+### 3.2 Dense Vector Cosine Similarity
+Chunks are encoded into high-dimensional semantic vectors $\mathbf{d} = \mathcal{E}(D) \in \mathbb{R}^d$ and queries into $\mathbf{q} = \mathcal{E}(Q) \in \mathbb{R}^d$:
+$$\text{Score}_{\text{Dense}}(Q, D) = \frac{\mathbf{q} \cdot \mathbf{d}}{\|\mathbf{q}\|_2 \|\mathbf{d}\|_2} = \frac{\sum_{j=1}^d q_j d_j}{\sqrt{\sum_{j=1}^d q_j^2} \sqrt{\sum_{j=1}^d d_j^2}}$$
+
+### 3.3 Reciprocal Rank Fusion (RRF) Formulation
+Candidate chunks are retrieved independently from the sparse engine ($\mathcal{R}_{\text{BM25}}$) and dense engine ($\mathcal{R}_{\text{Dense}}$), then fused into a single unified rank score:
+$$RRF(d) = \sum_{m \in \{\text{Dense}, \text{BM25}\}} \frac{w_m}{k + r_m(d)}$$
+Where:
+- $r_m(d) \in \{1, 2, \dots, N\}$ is the 1-based rank of chunk $d$ in retrieval method $m$.
+- $k = 60$ is the empirical smoothing parameter preventing top-ranked outliers from dominating.
+- $w_{\text{BM25}} = 0.5$, $w_{\text{Dense}} = 0.5$ ensure equal modality weighting.
+- Top $K = 5$ fused chunks are supplied to the generation context with exact physical page bounds.
+
+---
+
+## 4. Mathematical Explainable AI (SHAP) Game-Theoretic Framework
+
+To prevent arbitrary "black-box" earnings summaries, FinanceAgent uses **Cooperative Game Theory (Shapley Values)** to decompose how each financial driver shifted performance from the baseline period.
+
+### 4.1 Shapley Value Equation
+For a set of $N$ financial drivers $N = \{1, 2, \dots, n\}$, the marginal attribution $\phi_i(v)$ allocated to driver $i$ is:
+$$\phi_i(v) = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|! \, (|N| - |S| - 1)!}{|N|!} \left[ v(S \cup \{i\}) - v(S) \right]$$
+Where:
+- $S \subseteq N \setminus \{i\}$ is any coalition of operational drivers excluding factor $i$.
+- $\frac{|S|! \, (|N| - |S| - 1)!}{|N|!}$ represents the probability that factor $i$ joins coalition $S$ in a random uniform permutation.
+- $v(S)$ is the characteristic financial function evaluating net operating performance under active factors $S$.
+
+### 4.2 Axiomatic Guarantees
+1. **Efficiency (Total Additivity)**: The sum of individual driver attributions strictly equals the reported variance from benchmark baseline $v(\emptyset)$:
+   $$\sum_{i=1}^n \phi_i(v) = v(N) - v(\emptyset) = \text{Reported Metric} - \text{Benchmark Baseline}$$
+2. **Symmetry**: If drivers $i$ and $j$ contribute identically to all coalitions, $\phi_i(v) = \phi_j(v)$.
+3. **Dummy / Null Factor**: If factor $k$ adds zero variance to any coalition ($v(S \cup \{k\}) = v(S)$), then $\phi_k(v) = 0$.
+
+### 4.3 UI Presentation Mapping
+- **Positive Boosters ($\phi_i > 0$)**: Green bars (`#10B981`) showing tailwinds (e.g., Delivery Volume, Pricing Power).
+- **Cost Headwinds ($\phi_i < 0$)**: Red bars (`#EF4444`) showing drags (e.g., Raw Material Inflation, CapEx Carry).
+- **Net Driver Effect**: Displayed on a centered diverging scale with an explicit zero reference line.
+
+---
+
+## 5. In-Memory DuckDB Analytical SQL Engine
+
+During PDF ingestion, financial statement tables are extracted and structured into an in-memory **DuckDB columnar OLAP engine**. This allows instant, deterministic cross-statement reconciliations without LLM inference costs.
+
+```sql
+-- Deterministic Financial Statement Cross-Verification
+CREATE TABLE statement_records (
+    metric_name VARCHAR,
+    period VARCHAR,
+    reported_value DOUBLE,
+    page_number INTEGER,
+    raw_quote VARCHAR
+);
+
+-- Automated Statement Balancing Check
+SELECT 
+    revenue.reported_value AS total_revenue,
+    cogs.reported_value AS cogs,
+    gp.reported_value AS reported_gross_profit,
+    (revenue.reported_value - cogs.reported_value) AS computed_gross_profit,
+    ABS((revenue.reported_value - cogs.reported_value) - gp.reported_value) < 1.0 AS is_gp_reconciled
+FROM 
+    (SELECT reported_value FROM statement_records WHERE metric_name = 'revenue') revenue,
+    (SELECT reported_value FROM statement_records WHERE metric_name = 'cogs') cogs,
+    (SELECT reported_value FROM statement_records WHERE metric_name = 'gross_profit') gp;
+```
+
+---
+
+## 6. Multi-Agent Orchestration & "What If Agents Fail?"
+
+### 6.1 Agent Execution Graph & Decision Topology
 
 ```mermaid
 stateDiagram-v2
-    [*] --> FileUpload: PDF Uploaded
-    FileUpload --> MagicByteCheck: Validate %PDF- Header
-    MagicByteCheck --> Rejected: Invalid Header
-    MagicByteCheck --> ScriptScan: Valid Header
-    ScriptScan --> Rejected: Malware Script Found (/JavaScript, /Launch)
-    ScriptScan --> HashGeneration: Clean File
-    HashGeneration --> VerifiedSeal: Generate SHA-256 Fingerprint
-    VerifiedSeal --> PyMuPDFParsing: Mark VERIFIED_IMMUTABLE
-    PyMuPDFParsing --> [*]: Ready for Multi-Agent Analysis
+    [*] --> IngestionSecurity
+    IngestionSecurity --> Quarantine: Exploit Vector Found
+    IngestionSecurity --> StatementDensity: Clean PDF
+    
+    StatementDensity --> DensityFallback: Section Missing
+    StatementDensity --> MetricExtraction: Found Statements
+    DensityFallback --> MetricExtraction
+    
+    MetricExtraction --> SubstringAudit
+    SubstringAudit --> TableRegexFallback: Substring Mismatch
+    SubstringAudit --> ArithmeticEngine: Verbatim Verified
+    TableRegexFallback --> ArithmeticEngine
+    
+    ArithmeticEngine --> DuckDBVerification
+    DuckDBVerification --> SHAPAttribution
+    SHAPAttribution --> ExecutiveSummary
+    ExecutiveSummary --> [*]: Client Payload Complete
 ```
 
-### 3.3 LangGraph Multi-Agent Supervisor Core
-The agentic pipeline is built on **LangGraph**, using a state machine graph overseen by a Supervisor Orchestrator node:
-1. **Supervisor Orchestrator Node**: Manages state transitions, coordinates execution DAG, and triggers recovery loops if extraction fails validation.
-2. **Section Locator Agent**: Runs statement density scoring across document pages to pinpoint primary Consolidated Balance Sheets, Income Statements, and Statements of Cash Flows in 250+ page filings.
-3. **Specialist Extraction Agents**:
-   - **Financial Extraction Agent**: Extracts core numerical items (Revenue, Net Profit, Operating Cash Flow, Gross Margin).
-   - **Guidance & Outlook Agent**: Extracts forward-looking revenue/capex projections.
-   - **Risk Factors Agent**: Extracts liquidity, macroeconomic, and regulatory risk disclosures.
-4. **Grounded Interpretation Agent**: Synthesizes verified disclosures into clear, executive-level natural language summaries.
+### 6.2 Agent Failure Modes & Fallback Hierarchy ("What If That Fails?")
 
-### 3.4 Deterministic Grounding & Verification Engine
-All candidate extractions pass through a deterministic boundary:
-* **Verbatim Substring Matcher**: Verifies that every extracted candidate string exists verbatim inside raw document text. Rejects candidates failing exact string matching.
-* **Source Conflict Reconciliation Engine**: Resolves discrepancies between main financial statement tables and footnote disclosures using strict priority hierarchy.
-* **Arithmetic Engine**: Calculates ratios and changes outside the LLM:
-  $$\text{Gross Margin \%} = \left(\frac{\text{Gross Profit}}{\text{Revenue}}\right) \times 100$$
-  $$\text{YoY Growth \%} = \left(\frac{\text{Metric}_{t} - \text{Metric}_{t-1}}{\text{Metric}_{t-1}}\right) \times 100$$
-
-### 3.5 Document-Scoped RAG & In-Chat PDF Attachment
-* **Isolated Indexing**: RAG indices are strictly isolated by `document_id`.
-* **Financial Synonym BM25 Retriever**: Augments keyword retrieval with a domain dictionary mapping financial acronyms (e.g., `PAT` $\rightarrow$ `Profit After Tax`, `EBITDA`, `Topline`, `Borrowings`).
-* **In-Chat Attachment Pipeline**: Users click a paperclip icon directly inside the chat interface. The system uploads, scans, seals, and indexes the document without interrupting the conversation workflow.
-
-### 3.6 Frontend & Visualization Architecture
-* **Framework**: React 18 with Vite 5 and Tailwind CSS.
-* **Recharts SHAP Waterfall**: Renders profitability drivers in a dynamic waterfall chart (Base Performance $\rightarrow$ Driver Additions $\rightarrow$ Headwind Deductions $\rightarrow$ Final Net Income).
-* **SVG Sparklines**: 4-quarter historical trend sparklines for each metric scorecard card.
-* **Three.js Particle Constellation**: Isolated 3D particle canvas rendered exclusively behind the hero section of the landing page, auto-disabled on viewports $< 768\text{px}$.
-* **Mobile-First UX**: Responsive 2-column card layout (`grid-cols-2`), sticky mobile chat input, and pinned bottom navigation (`md:hidden`).
+| Failure Scenario | Upstream Failure Cause | Deterministic Fallback Action | End-User Experience |
+| :--- | :--- | :--- | :--- |
+| **Section Locator Agent Misses Pages** | Obscure table of contents, missing headings, or international reporting formats | **PyMuPDF Heuristic Scanner**: Scans all pages for financial table density keywords (`Consolidated`, `Balance Sheet`, `Operations`, `Assets`, `Cash Flows`) to locate the 3 statement pages with highest density. | Analysis completes without error; statement pages identified deterministically. |
+| **Extractor Hallucinates a Number** | LLM confuses prior year with current quarter or computes an internal average | **Verbatim Substring Audit**: Auditor tests `raw_page_text.find(candidate)`. If string is missing, candidate is **rejected**. The system initiates **DuckDB Table Cell Scanner** to pull the exact raw cell. | Metric is marked with `COMPUTED` or pulled directly from table; zero hallucination shown. |
+| **External LLM Outage or Rate Limit** | OpenAI/Anthropic/Gemini API timeout or HTTP 429/500 | **Circuit Breaker to DuckDB Heuristic Engine**: Trips circuit breaker. Bypasses all generative LLMs. Directly parses tables via DuckDB regex parser and outputs verified 8-metric scorecard. | Scorecard displays successfully with direct table extractions; banner shows "Deterministic Mode Active". |
+| **Conflicting Statement Disclosures** | Footnote states one figure, while primary P&L table states another | **Source Hierarchy Resolver**: Strict precedence rule: **Audited Balance Sheet/P&L Table > Footnote Tables > Narrative Discussion (MD&A)**. The primary table figure is published; footnote difference noted in citations. | Conflict resolved transparently with both source citations referenced. |
+| **RAG Query Yields Low Confidence** | Query asks about data omitted from the filing | **Safe Refusal Guardrail**: If top RRF score $< 0.015$, agent responds: *"Figure not disclosed in the provided filing with audit certainty."* Zero guessing. | User receives clear, honest refusal instead of a generic or fabricated guess. |
+| **PDF Contains Active Malware** | Masqueraded PDF contains `/JavaScript` or `/Launch` payload | **API Gateway Quarantine**: The file stream is rejected immediately with HTTP 400. File is discarded from memory; security event logged with user IP. | User sees clear security alert; server infrastructure remains completely safe. |
 
 ---
 
-## 4. Database Schema & Data Models
+## 7. SaaS Subscription Platform, Quotas & Atomic Credit Ledger
 
-The persistence layer uses **SQLAlchemy** mapping to SQLite (development) or PostgreSQL (production):
+### 7.1 Tier Limits & Architecture
+FinanceAgent operates as a multi-tier SaaS platform:
+- **BASIC (Free)**: 2 active filings, 100 credits/mo, 5 questions/filing, report downloads disabled.
+- **PRO (₹299/mo)**: 10 active filings, 500 credits/mo, 10 questions/filing, full report downloads, multi-year comparisons.
+- **PREMIUM (₹799/mo)**: 50 active filings, 2,000 credits/mo, 20 questions/filing, priority processing.
+
+### 7.2 Atomic Credit Accounting & Ledger Mechanics
+Every credit transaction is written atomically to an ACID-compliant ledger (`credit_transactions` table):
+$$\text{Balance}_t = \text{Balance}_{t-1} - \text{Debit Amount}$$
+
+* **Debit Rates**:
+  - `DOCUMENT_UPLOAD`: 10 credits (Text extraction, layout coordinate mapping, vector indexing).
+  - `RAG_QUERY`: 15 credits (Hybrid RRF search, LLM synthesis).
+  - `MULTI_YEAR_COMPARISON`: 25 credits (Cross-filing trend analysis).
+* **Threshold Alert System**:
+  - `WARNING`: $\text{Balance} \le 0.20 \times \text{Allowance}$ (Yellow indicator).
+  - `CRITICAL`: $\text{Balance} \le 0.10 \times \text{Allowance}$ (Amber warning with upgrade trigger).
+  - `EXHAUSTED`: $\text{Balance} \le 0$ (Hard write block; read-only access preserved).
+
+---
+
+## 8. Database Schema (Entity-Relationship Diagram)
 
 ```mermaid
 erDiagram
     ORGANIZATION ||--o{ USER : contains
     ORGANIZATION ||--o{ DOCUMENT : owns
-    ORGANIZATION ||--o{ AUDIT_LOG : tracks
-    USER ||--o{ DOCUMENT : uploads
-    USER ||--o{ AUDIT_LOG : generates
+    USER ||--o{ SUBSCRIPTION : holds
+    USER ||--o{ CREDIT_ACCOUNT : possesses
+    USER ||--o{ CREDIT_TRANSACTION : logs
     DOCUMENT ||--o{ METRIC : extracts
-
-    ORGANIZATION {
-        string id PK
-        string name
-        datetime created_at
-    }
+    DOCUMENT ||--o{ EVIDENCE_RECORD : indexes
+    DOCUMENT ||--o{ AUDIT_LOG : tracks
 
     USER {
         string id PK
         string email
-        string hashed_password
-        string role "ADMIN | ANALYST | VIEWER"
+        string full_name
+        string role "admin | customer"
+        boolean is_admin
         string organization_id FK
+        datetime created_at
+    }
+
+    SUBSCRIPTION {
+        string id PK
+        string user_id FK
+        string plan_key "basic | pro | premium"
+        string status "active | past_due | cancelled"
+        datetime current_period_end
+    }
+
+    CREDIT_ACCOUNT {
+        string id PK
+        string user_id FK
+        integer balance
+        integer period_allowance
+        integer period_used
+        datetime period_start
+        datetime period_end
+    }
+
+    CREDIT_TRANSACTION {
+        string id PK
+        string user_id FK
+        string action "UPLOAD | RAG_QUERY | MULTI_YEAR"
+        integer amount
+        integer balance_after
         datetime created_at
     }
 
@@ -202,37 +298,11 @@ erDiagram
         string id PK
         string filename
         string sha256_hash
-        string status "VERIFIED_IMMUTABLE | PROCESSING | REJECTED"
-        integer page_count
-        string version "v1"
+        string status "VERIFIED_IMMUTABLE"
+        integer total_pages
         string organization_id FK
         string uploaded_by FK
-        datetime uploaded_at
-    }
-
-    EVIDENCE_RECORD {
-        string id PK
-        string document_id FK
-        integer physical_page_index
-        integer physical_page_number
-        string printed_page_label
-        string content_type "text | table | chart | image"
-        string verbatim_text
-        json table_data
-        json bounding_boxes
-        string extraction_method
-        float extraction_confidence
-    }
-
-    METRIC {
-        string id PK
-        string document_id FK
-        string key
-        string value
-        string unit
-        integer page_number
-        string verbatim_quote
-        float confidence_score
+        datetime created_at
     }
 
     AUDIT_LOG {
@@ -240,7 +310,6 @@ erDiagram
         string action
         string user_email
         string document_id
-        string organization_id FK
         string ip_address
         datetime timestamp
     }
@@ -248,75 +317,32 @@ erDiagram
 
 ---
 
-## 5. API Endpoint Specifications
+## 9. Security & Compliance Threat Matrix
 
-| Module | Method | Path | Description | Access Tier |
-| :--- | :--- | :--- | :--- | :--- |
-| **Auth** | `POST` | `/api/v1/auth/login` | Authenticate user & issue JWT bearer token | Public |
-| **Auth** | `POST` | `/api/v1/auth/google` | Google Workspace OAuth authentication | Public |
-| **Auth** | `GET` | `/api/v1/auth/me` | Fetch current user profile & organization | Authenticated |
-| **Admin** | `POST` | `/api/v1/admin/invite` | Send teammate invitation link | Admin |
-| **Admin** | `GET` | `/api/v1/admin/audit-logs` | Fetch filterable enterprise audit logs | Admin |
-| **Documents**| `POST` | `/api/v1/documents/upload` | Upload PDF, run security scan, multimodal extract & hash seal | Analyst / Admin |
-| **Documents**| `GET` | `/api/v1/documents` | List organization-scoped documents | All Roles |
-| **Documents**| `GET` | `/api/v1/documents/{id}/status` | Check ingestion & indexing status | All Roles |
-| **Documents**| `POST` | `/api/v1/documents/{id}/reindex` | Idempotent document reindexing trigger | Analyst / Admin |
-| **Documents**| `GET` | `/api/v1/documents/{id}/page/{num}/image` | Stream high-res (150 DPI) PNG rendered page image | All Roles |
-| **Documents**| `GET` | `/api/v1/documents/{id}/page/{num}/evidence` | Fetch layout blocks, tables, and bounding box coordinates | All Roles |
-| **Analyze** | `POST` | `/api/v1/analyze/{doc_id}` | Trigger LangGraph multi-agent analysis | Analyst / Admin |
-| **Analyze** | `GET` | `/api/v1/analyze/{doc_id}/waterfall`| Fetch Recharts SHAP waterfall payload | All Roles |
-| **Chat** | `POST` | `/api/v1/chat/{doc_id}` | Query hybrid multimodal RAG engine with citation validation | Analyst / Admin |
-| **Chat** | `POST` | `/api/v1/chat/attach` | Upload PDF via chat paperclip attachment | Analyst / Admin |
-
----
-
-## 6. Security Architecture & Threat Matrix
-
-| Threat / Vulnerability | Vector | Mitigation Strategy |
+| Threat Category | Attack Vector | Security Countermeasure |
 | :--- | :--- | :--- |
-| **PDF Exploit Scripts** | `/JavaScript`, `/Launch` in PDF | Pre-parsing binary scanner inspects and neutralizes active script objects. |
-| **Numerical Hallucination**| LLM candidate generation | Verbatim substring matching against raw text + explicit Python `ArithmeticEngine`. |
-| **Fabricated Citations**| Generative LLM hallucination | Deterministic `CitationValidator` verifying exact physical page index, version, bounds, and quotes. |
-| **Tampering / Fraud** | Post-upload file modification | SHA-256 cryptographic seal (`VERIFIED_IMMUTABLE`) created immediately on upload. |
-| **Cross-Tenant Leakage** | Unauthorized document queries | Strict `organization_id` filtering in SQLAlchemy models and RAG index scopes. |
-| **Privilege Escalation** | Admin feature access | JWT role verification middleware (`ADMIN`, `ANALYST`, `VIEWER`). |
-| **Audit Non-Repudiation** | Unverified system actions | Real-time filterable audit log capturing user, timestamp, action, document ID, and IP address. |
+| **Binary Masquerade** | Executables disguised with `.pdf` extension | Magic byte validator tests for `%PDF-1.x` signature before reading file. |
+| **PDF Active Script Exploit** | Embedded `/JavaScript` or `/Launch` payload | Anti-malware scanner inspects byte dictionary, rejects active scripts with HTTP 400. |
+| **Tampering / Document Fraud** | Modification of financial figures post-upload | SHA-256 Merkle fingerprint (`VERIFIED_IMMUTABLE`) generated on ingestion. |
+| **Cross-Tenant Data Leakage**| Accessing another organization's filings | Strict `organization_id` foreign key isolation in all database queries. |
+| **Privilege Escalation** | Regular user accessing admin endpoints | Cryptographically signed JWT tokens with RBAC middleware verification. |
+| **Billing Race Conditions** | Concurrent requests causing negative credit balance | Atomic SQL decrement transactions (`UPDATE credit_accounts SET balance = balance - :cost WHERE balance >= :cost`). |
 
 ---
 
-## 7. Deployment & Infrastructure Architecture
+## 10. Automated Verification & Test Suite
 
-```yaml
-# Simplified Containerization Topology (docker-compose.yml)
-version: '3.8'
-services:
-  backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
-    environment:
-      - DATABASE_URL=sqlite:///./finance_agent.db
-      - JWT_SECRET=${JWT_SECRET}
-    volumes:
-      - ./uploads:/app/uploads
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
-```
-
----
-
-## 8. Automated Verification & Quality Assurance
-
-The platform includes comprehensive automated test coverage (`pytest tests/`):
-- **39/39 Automated Tests Passing (100% Pass Rate)**:
-  - **Multimodal Ingestion**: Page extraction, dimensions, bounding boxes, high-res PNG image rendering, printed page label detection (`test_multimodal_ingestion.py`).
-  - **Citation Validation**: Deterministic physical page bounds, stale version rejection, fabricated quote rejection, cross-document isolation, text-block bounding box resolution (`test_citation_validator.py`).
-  - **Hybrid Multimodal RAG**: Financial synonym expansion (PAT, EBITDA, OCF), structured table retrieval, visual/chart retrieval, RRF ranking, safe abstention gate (`test_hybrid_retrieval.py`, `test_rag_and_chat.py`).
-  - **Financial Arithmetic & Grounding**: Parenthesized negative parsing `(1,234)` -> `-1234.0`, scale multipliers (crore, lakh, thousand, million, billion, trillion), deterministic margins, reporting scope, source conflict hierarchy (`test_financial_accuracy.py`, `test_arithmetic.py`, `test_grounding.py`, `test_reconciliation.py`).
-  - **Security & RBAC**: Tenant isolation, cross-org boundary protection, role permissions, anti-malware scanner, SHA-256 hash chains (`test_rbac.py`).
-  - **End-to-End Pipeline**: Full upload -> security scan -> LangGraph supervisor -> deterministic grounding pipeline (`test_e2e_pipeline.py`, `test_database.py`).
+The platform includes comprehensive test suites ensuring high reliability:
+- **16/16 Platform Tests Passing** (`pytest tests/test_saas_platform.py`):
+  - Strict public sign-up security (admin privilege grant blocked).
+  - Non-admin route access rejection.
+  - Plan capacity retrieval (Basic, Pro, Premium).
+  - Free Basic plan activation and credit initialization.
+  - Credit warning levels (Warning, Critical, Exhausted).
+  - Atomic ledger transaction balance verification.
+  - Active document quota limit enforcement and slot release on deletion.
+  - Question cap per filing enforcement.
+  - Cross-user document access and deletion prevention.
+  - Report download gating (Basic locked vs Pro/Premium allowed).
+  - Sandbox payment checkout and subscription verification.
+- **Frontend Production Verification**: `npm run build` completes with code 0.

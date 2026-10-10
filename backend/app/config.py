@@ -44,6 +44,21 @@ class Settings(BaseSettings):
     # Vector DB
     CHROMA_PERSIST_DIR: str = "./chroma_db"
 
+    # Admin Bootstrap (read from env, development defaults)
+    ADMIN_EMAIL: str = "admin@gmail.com"
+    ADMIN_PASSWORD: str = "admin123456"
+
+    # SaaS Credit Costs (configurable)
+    UPLOAD_CREDIT_COST: int = 10
+    QUESTION_CREDIT_COST: int = 15
+    VISUAL_ANALYSIS_CREDIT_COST: int = 10
+
+    # Payment Gateway (Razorpay Indian Market)
+    RAZORPAY_KEY_ID: Optional[str] = None
+    RAZORPAY_KEY_SECRET: Optional[str] = None
+    RAZORPAY_WEBHOOK_SECRET: Optional[str] = None
+    PAYMENT_TEST_MODE: bool = True
+
     class Config:
         env_file = ".env"
         extra = "ignore"

@@ -57,6 +57,8 @@ def migrate_schema():
             cur.execute("ALTER TABLE users ADD COLUMN organization_id VARCHAR;")
         if "last_active" not in user_cols:
             cur.execute("ALTER TABLE users ADD COLUMN last_active DATETIME;")
+        if "is_admin" not in user_cols:
+            cur.execute("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0;")
 
         # Check documents table columns
         cur.execute("PRAGMA table_info(documents);")
@@ -187,12 +189,155 @@ def preindex_existing_documents():
     bg_thread.start()
 
 
+def seed_plans():
+    """
+    Seeds initial configurable subscription plans (Basic, Pro, Premium) idempotently.
+    """
+    from backend.app.models.models import Plan
+
+    plans_data = [
+        {
+            "key": "basic",
+            "name": "BASIC",
+            "price": 0,
+            "currency": "INR",
+            "billing_interval": "month",
+            "max_documents": 2,
+            "monthly_credits": 100,
+            "questions_per_doc_limit": 5,
+            "upload_credit_cost": getattr(settings, "UPLOAD_CREDIT_COST", 10),
+            "question_credit_cost": getattr(settings, "QUESTION_CREDIT_COST", 15),
+            "visual_credit_cost": getattr(settings, "VISUAL_ANALYSIS_CREDIT_COST", 10),
+            "can_download_reports": False,
+            "can_compare_years": False,
+            "priority_processing": False,
+            "is_active": True
+        },
+        {
+            "key": "pro",
+            "name": "PRO",
+            "price": 299,
+            "currency": "INR",
+            "billing_interval": "month",
+            "max_documents": 10,
+            "monthly_credits": 500,
+            "questions_per_doc_limit": 10,
+            "upload_credit_cost": getattr(settings, "UPLOAD_CREDIT_COST", 10),
+            "question_credit_cost": getattr(settings, "QUESTION_CREDIT_COST", 15),
+            "visual_credit_cost": getattr(settings, "VISUAL_ANALYSIS_CREDIT_COST", 10),
+            "can_download_reports": True,
+            "can_compare_years": True,
+            "priority_processing": False,
+            "is_active": True
+        },
+        {
+            "key": "premium",
+            "name": "PREMIUM",
+            "price": 799,
+            "currency": "INR",
+            "billing_interval": "month",
+            "max_documents": 50,
+            "monthly_credits": 2000,
+            "questions_per_doc_limit": 20,
+            "upload_credit_cost": getattr(settings, "UPLOAD_CREDIT_COST", 10),
+            "question_credit_cost": getattr(settings, "QUESTION_CREDIT_COST", 15),
+            "visual_credit_cost": getattr(settings, "VISUAL_ANALYSIS_CREDIT_COST", 10),
+            "can_download_reports": True,
+            "can_compare_years": True,
+            "priority_processing": True,
+            "is_active": True
+        }
+    ]
+
+    db = SessionLocal()
+    try:
+        for p_def in plans_data:
+            existing = db.query(Plan).filter(Plan.key == p_def["key"]).first()
+            if not existing:
+                plan = Plan(**p_def)
+                db.add(plan)
+            else:
+                # Update attributes while keeping existing ID
+                for k, v in p_def.items():
+                    setattr(existing, k, v)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Seed plans note: {e}")
+    finally:
+        db.close()
+
+
+def bootstrap_admin():
+    """
+    Idempotently provisions designated administrator account from environment variables.
+    Never duplicates; enforces hashed password and admin privileges.
+    """
+    from datetime import datetime, timedelta
+    from backend.app.models.models import User, Organization, CreditAccount
+    from backend.app.core.security import get_password_hash
+
+    admin_email = getattr(settings, "ADMIN_EMAIL", "admin@gmail.com").strip().lower()
+    admin_password = getattr(settings, "ADMIN_PASSWORD", "admin123456")
+
+    db = SessionLocal()
+    try:
+        org = db.query(Organization).first()
+        org_id = org.id if org else None
+
+        admin_user = db.query(User).filter(User.email == admin_email).first()
+        if not admin_user:
+            admin_user = User(
+                email=admin_email,
+                hashed_password=get_password_hash(admin_password),
+                full_name="Platform Administrator",
+                role="admin",
+                is_admin=True,
+                provider="local",
+                organization_id=org_id,
+                last_active=datetime.utcnow(),
+                is_active=True
+            )
+            db.add(admin_user)
+            db.commit()
+            db.refresh(admin_user)
+        else:
+            admin_user.role = "admin"
+            admin_user.is_admin = True
+            admin_user.is_active = True
+            db.commit()
+
+        # Ensure admin has credit account with generous operational credits
+        cred = db.query(CreditAccount).filter(CreditAccount.user_id == admin_user.id).first()
+        if not cred:
+            now = datetime.utcnow()
+            cred = CreditAccount(
+                user_id=admin_user.id,
+                balance=10000,
+                period_allowance=10000,
+                period_used=0,
+                period_start=now,
+                period_end=now + timedelta(days=365)
+            )
+            db.add(cred)
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Admin bootstrap note: {e}")
+    finally:
+        db.close()
+
+
 def init_db():
     from backend.app.models.models import (
         Organization, User, Invitation, Document, DocumentAccess,
-        DocumentChunk, EvidenceRecord, Metric, AnalysisRecord, ChatSession, ChatMessage, AuditLog
+        DocumentChunk, EvidenceRecord, Metric, AnalysisRecord, ChatSession, ChatMessage, AuditLog,
+        Plan, Subscription, CreditAccount, CreditTransaction, UsageRecord, Payment
     )
     Base.metadata.create_all(bind=engine)
     migrate_schema()
+    seed_plans()
+    bootstrap_admin()
     seed_default_users_and_samples()
     preindex_existing_documents()
+

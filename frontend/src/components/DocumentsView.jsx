@@ -35,8 +35,7 @@ export default function DocumentsView({
   const [searchTerm, setSearchTerm] = useState('');
   const [showUploadZone, setShowUploadZone] = useState(false);
 
-  const isViewer = user && user.role === 'viewer';
-  const isAdmin = user && user.role === 'admin';
+  const isAdmin = user && (user.is_admin || user.role === 'admin');
 
   const filteredDocs = documents.filter(doc => {
     const q = searchTerm.toLowerCase();
@@ -47,6 +46,9 @@ export default function DocumentsView({
     );
   });
 
+  const maxDocs = user?.subscription?.max_active_documents || (user?.is_admin ? 100 : 2);
+  const isAtLimit = !user?.is_admin && documents.length >= maxDocs;
+
   return (
     <div className="space-y-4 font-mono text-zinc-900">
       {/* Header Bar */}
@@ -56,28 +58,44 @@ export default function DocumentsView({
             <FileText className="w-5 h-5 stroke-[2.5]" />
             <span>FINANCIAL DOCUMENT REPOSITORY</span>
           </h1>
-          <p className="text-[11px] text-zinc-600 font-sans">
-            Cryptographically Sealed SEC 10-K &amp; 10-Q Filings &bull; Scoped to {user?.organization_name || 'FinanceCorp Global'}
+          <p className="text-[11px] text-zinc-600 font-sans flex items-center gap-2 mt-0.5">
+            <span>Scoped to {user?.organization_name || 'Private Workspace'}</span>
+            <span className="neo-badge text-[9px] bg-zinc-100 py-0 font-mono">
+              CAPACITY: {documents.length} / {user?.is_admin ? '∞' : maxDocs} ACTIVE FILINGS
+            </span>
+            {isAtLimit && (
+              <span className="neo-badge text-[9px] bg-[#FEE2E2] text-rose-800 border-rose-900 py-0 font-bold">
+                SLOT LIMIT REACHED
+              </span>
+            )}
           </p>
         </div>
 
-        {!isViewer && (
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          {isAtLimit && (
+            <button
+              onClick={() => onNavigate && onNavigate('pricing')}
+              className="neo-badge bg-[#FFE600] text-black text-[10px] font-black cursor-pointer hover:bg-yellow-400 py-1"
+            >
+              + EXPAND SLOTS
+            </button>
+          )}
           <button
             onClick={() => setShowUploadZone(!showUploadZone)}
-            className="neo-button-primary text-xs self-start sm:self-auto"
+            className="neo-button-primary text-xs"
           >
             <Upload className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>{showUploadZone ? 'HIDE UPLOAD' : '+ UPLOAD DOCUMENT'}</span>
           </button>
-        )}
+        </div>
       </div>
 
       {/* Upload Zone Drawer */}
-      {showUploadZone && !isViewer && (
+      {showUploadZone && (
         <div className="neo-card bg-[#FFF9C4] space-y-2">
           <div className="flex items-center justify-between">
             <span className="neo-badge-yellow text-[9px]">INLINE DOCUMENT INGESTION</span>
-            <span className="text-[10px] font-black text-black uppercase">CLEARANCE: {user?.role}</span>
+            <span className="text-[10px] font-black text-black uppercase">ENCRYPTED PARSING</span>
           </div>
           <UploadZone 
             onDocumentUploaded={(doc) => {
@@ -183,15 +201,13 @@ export default function DocumentsView({
                           <span>PDF</span>
                         </button>
 
-                        {!isViewer && (
-                          <button
-                            onClick={() => onOpenShareModal(doc.id)}
-                            className="neo-button-secondary text-xs py-1 px-2.5"
-                            title="Share Filing"
-                          >
-                            <Share2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => onOpenShareModal(doc.id)}
+                          className="neo-button-secondary text-xs py-1 px-2.5"
+                          title="Share Filing"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
 
                         {(isAdmin || doc.uploaded_by === user?.email) && (
                           <button

@@ -12,18 +12,61 @@ import {
   Sparkles
 } from 'lucide-react';
 
+import { api } from '../services/api';
+
 export default function ReportsView({ 
   user, 
   documents, 
   activeDocument, 
   analysisResult, 
   selectDocument, 
-  onInspectCitation 
+  onInspectCitation,
+  subscription,
+  onUpgradeClick
 }) {
   const [copied, setCopied] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const canDownload = subscription?.can_download_reports ?? (user?.subscription?.can_download_reports ?? (user?.role === 'admin'));
+
+  const checkDownloadAccess = () => {
+    if (!canDownload) {
+      if (onUpgradeClick) {
+        onUpgradeClick({
+          reason: 'DOWNLOAD_LIMIT',
+          message: 'Financial report downloads and exports are restricted on the Free Basic plan. Upgrade to Pro or Premium to unlock verified executive reports.',
+          planName: subscription?.plan_name || user?.subscription?.plan_name || 'Basic'
+        });
+      }
+      return false;
+    }
+    return true;
+  };
+
+  const handleDownloadOfficialReport = async () => {
+    if (!activeDocument) return;
+    if (!checkDownloadAccess()) return;
+    try {
+      setIsDownloading(true);
+      await api.downloadReport(activeDocument.id, `${activeDocument.company_name || 'financial'}_official_report.json`);
+    } catch (err) {
+      if (onUpgradeClick && (err.message?.includes('403') || err.message?.includes('Basic'))) {
+        onUpgradeClick({
+          reason: 'DOWNLOAD_LIMIT',
+          message: err.message,
+          planName: 'Basic'
+        });
+      } else {
+        alert(err.message || 'Download failed');
+      }
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handleDownloadJSON = () => {
     if (!analysisResult) return;
+    if (!checkDownloadAccess()) return;
     const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(analysisResult, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
@@ -35,6 +78,7 @@ export default function ReportsView({
 
   const handleDownloadMarkdown = () => {
     if (!analysisResult) return;
+    if (!checkDownloadAccess()) return;
     let md = `# FINANCIAL INTELLIGENCE REPORT\n`;
     md += `Company: ${analysisResult.document_meta?.company_name || 'N/A'}\n`;
     md += `Fiscal Period: ${analysisResult.document_meta?.fiscal_period || 'N/A'}\n`;
@@ -82,10 +126,15 @@ export default function ReportsView({
           </h1>
           <p className="text-xs sm:text-sm text-zinc-800 font-bold mt-1">
             AUDIT-VERIFIED EXECUTIVE SCORECARDS &bull; JSON &amp; MARKDOWN EXPORT ENGINE
+            {!canDownload && (
+              <span className="ml-2 bg-[#FEE2E2] text-rose-800 border border-black px-1.5 py-0.5 text-[10px] uppercase font-black">
+                EXPORTS RESTRICTED TO PRO &amp; PREMIUM
+              </span>
+            )}
           </p>
         </div>
 
-        <div className="flex items-center space-x-2 self-start sm:self-auto">
+        <div className="flex items-center flex-wrap gap-2 self-start sm:self-auto">
           <button
             onClick={handlePrint}
             className="neo-button-secondary text-xs sm:text-sm"
@@ -95,21 +144,34 @@ export default function ReportsView({
           </button>
 
           <button
-            onClick={handleDownloadMarkdown}
-            disabled={!analysisResult}
-            className="neo-button-secondary text-xs sm:text-sm"
+            onClick={handleDownloadOfficialReport}
+            disabled={!analysisResult || isDownloading}
+            className={`text-xs sm:text-sm border-2 border-black font-black uppercase px-3 py-1.5 flex items-center gap-1.5 transition ${
+              canDownload
+                ? 'bg-[#FFE600] text-black shadow-[2px_2px_0px_0px_#000] hover:-translate-x-0.5 hover:-translate-y-0.5 active:translate-x-0.5 active:translate-y-0.5 cursor-pointer'
+                : 'bg-zinc-200 text-zinc-600 opacity-80 cursor-pointer'
+            }`}
           >
             <Download className="w-4 h-4 stroke-[2.5]" />
-            <span>EXPORT MARKDOWN</span>
+            <span>{isDownloading ? 'DOWNLOADING...' : canDownload ? 'DOWNLOAD AUDITED REPORT' : 'REPORT (LOCKED)'}</span>
+          </button>
+
+          <button
+            onClick={handleDownloadMarkdown}
+            disabled={!analysisResult}
+            className={`neo-button-secondary text-xs sm:text-sm ${!canDownload ? 'opacity-80' : ''}`}
+          >
+            <Download className="w-4 h-4 stroke-[2.5]" />
+            <span>MD EXPORT {!canDownload && '🔒'}</span>
           </button>
 
           <button
             onClick={handleDownloadJSON}
             disabled={!analysisResult}
-            className="neo-button-primary text-xs sm:text-sm"
+            className={`neo-button-primary text-xs sm:text-sm ${!canDownload ? 'opacity-80' : ''}`}
           >
             <FileCode className="w-4 h-4 stroke-[2.5]" />
-            <span>EXPORT JSON</span>
+            <span>JSON EXPORT {!canDownload && '🔒'}</span>
           </button>
         </div>
       </div>

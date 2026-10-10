@@ -33,6 +33,7 @@ class User(Base):
     full_name = Column(String, nullable=False)
     role = Column(String, default="analyst", nullable=False)  # admin, analyst, viewer
     is_active = Column(Boolean, default=True)
+    is_admin = Column(Boolean, default=False, nullable=False)
     provider = Column(String, default="local", nullable=False)  # local, google
     organization_id = Column(String, ForeignKey("organizations.id"), nullable=True)
     last_active = Column(DateTime, default=datetime.utcnow)
@@ -45,6 +46,11 @@ class User(Base):
     audit_logs = relationship("AuditLog", back_populates="user")
     sent_invitations = relationship("Invitation", back_populates="invited_by", foreign_keys="Invitation.invited_by_id")
     chat_sessions = relationship("ChatSession", back_populates="user")
+    subscription = relationship("Subscription", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    credit_account = relationship("CreditAccount", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    credit_transactions = relationship("CreditTransaction", back_populates="user", cascade="all, delete-orphan")
+    usage_records = relationship("UsageRecord", back_populates="user", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")
 
 
 class Invitation(Base):
@@ -230,3 +236,127 @@ class AuditLog(Base):
 
     user = relationship("User", back_populates="audit_logs")
     organization = relationship("Organization", back_populates="audit_logs")
+
+
+class Plan(Base):
+    __tablename__ = "plans"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    key = Column(String, unique=True, index=True, nullable=False)  # basic, pro, premium
+    name = Column(String, nullable=False)
+    price = Column(Integer, nullable=False, default=0)  # in INR (0, 299, 799)
+    currency = Column(String, default="INR", nullable=False)
+    billing_interval = Column(String, default="month", nullable=False)
+    max_documents = Column(Integer, nullable=False, default=2)  # Active document allowance
+    monthly_credits = Column(Integer, nullable=False, default=100)
+    questions_per_doc_limit = Column(Integer, nullable=False, default=5)
+    upload_credit_cost = Column(Integer, nullable=False, default=10)
+    question_credit_cost = Column(Integer, nullable=False, default=15)
+    visual_credit_cost = Column(Integer, nullable=False, default=10)
+    can_download_reports = Column(Boolean, default=False, nullable=False)
+    can_compare_years = Column(Boolean, default=False, nullable=False)
+    priority_processing = Column(Boolean, default=False, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    subscriptions = relationship("Subscription", back_populates="plan")
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    plan_id = Column(String, ForeignKey("plans.id"), nullable=False)
+    status = Column(String, default="active", nullable=False)  # active, canceled, expired, past_due
+    current_period_start = Column(DateTime, default=datetime.utcnow, nullable=False)
+    current_period_end = Column(DateTime, nullable=False)
+    provider_subscription_id = Column(String, nullable=True)
+    provider_order_id = Column(String, nullable=True)
+    provider_payment_id = Column(String, nullable=True)
+    canceled_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="subscription")
+    plan = relationship("Plan", back_populates="subscriptions")
+    payments = relationship("Payment", back_populates="subscription")
+
+
+class CreditAccount(Base):
+    __tablename__ = "credit_accounts"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+    balance = Column(Integer, default=100, nullable=False)
+    period_allowance = Column(Integer, default=100, nullable=False)
+    period_used = Column(Integer, default=0, nullable=False)
+    period_start = Column(DateTime, default=datetime.utcnow, nullable=False)
+    period_end = Column(DateTime, nullable=False)
+    version = Column(Integer, default=1, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="credit_account")
+
+
+class CreditTransaction(Base):
+    __tablename__ = "credit_transactions"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    document_id = Column(String, ForeignKey("documents.id"), nullable=True)
+    transaction_type = Column(String, nullable=False)  # grant, upload_debit, question_debit, visual_debit, refund, admin_adjustment
+    amount = Column(Integer, nullable=False)  # positive for grant/refund, negative for debit
+    balance_before = Column(Integer, nullable=False)
+    balance_after = Column(Integer, nullable=False)
+    reason = Column(String, nullable=False)
+    reference = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    user = relationship("User", back_populates="credit_transactions")
+    document = relationship("Document")
+
+
+class UsageRecord(Base):
+    __tablename__ = "usage_records"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    document_id = Column(String, ForeignKey("documents.id"), nullable=True, index=True)
+    operation_type = Column(String, nullable=False)  # upload, question, visual_analysis, report_download
+    status = Column(String, default="success", nullable=False)  # success, failed
+    credits_charged = Column(Integer, default=0, nullable=False)
+    billing_period_start = Column(DateTime, nullable=True)
+    idempotency_key = Column(String, nullable=True, index=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    user = relationship("User", back_populates="usage_records")
+    document = relationship("Document")
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+
+    id = Column(String, primary_key=True, default=generate_uuid)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False, index=True)
+    subscription_id = Column(String, ForeignKey("subscriptions.id"), nullable=True)
+    plan_id = Column(String, ForeignKey("plans.id"), nullable=True)
+    provider = Column(String, default="razorpay", nullable=False)
+    order_id = Column(String, nullable=False, index=True)
+    payment_id = Column(String, nullable=True, index=True)
+    signature = Column(String, nullable=True)
+    amount = Column(Integer, nullable=False)  # amount in paise or INR
+    currency = Column(String, default="INR", nullable=False)
+    status = Column(String, default="created", nullable=False)  # created, captured, failed
+    verified_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    user = relationship("User", back_populates="payments")
+    subscription = relationship("Subscription", back_populates="payments")
+

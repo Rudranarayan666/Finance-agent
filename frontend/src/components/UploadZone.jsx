@@ -128,11 +128,26 @@ export default function UploadZone({ onDocumentUploaded, isProcessing, currentJo
         )}
       </div>
 
-      {/* Error alert */}
+      {/* Error alert with plan upgrade prompt */}
       {error && (
-        <div className="mt-2.5 p-2.5 bg-[#FEE2E2] border-2 border-black text-rose-950 text-xs flex items-center space-x-2 animate-in fade-in">
-          <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
-          <span className="font-sans font-bold text-[11px]">{error}</span>
+        <div className="mt-2.5 p-3 bg-[#FEE2E2] border-2 border-black text-rose-950 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 animate-in fade-in">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-4 h-4 text-rose-700 shrink-0" />
+            <span className="font-sans font-bold text-[11px]">{error}</span>
+          </div>
+          {(error.includes('limit') || error.includes('credit') || error.includes('402') || error.includes('403')) && (
+            <a
+              href="#pricing"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.hash = 'pricing';
+                window.dispatchEvent(new CustomEvent('open-pricing'));
+              }}
+              className="neo-badge bg-[#FFE600] text-black text-[10px] font-black shrink-0 cursor-pointer hover:bg-yellow-400"
+            >
+              UPGRADE PLAN &rarr;
+            </a>
+          )}
         </div>
       )}
     </div>

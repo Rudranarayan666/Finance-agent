@@ -21,7 +21,8 @@ export default function AiResearchView({
   selectDocument, 
   onInspectCitation, 
   onDocumentUploaded, 
-  onNavigate 
+  onNavigate,
+  onRefreshCredits
 }) {
   return (
     <div className="space-y-4 font-mono text-zinc-900">
@@ -159,6 +160,7 @@ export default function AiResearchView({
             user={user}
             onInspectCitation={onInspectCitation}
             onDocumentUploaded={onDocumentUploaded}
+            onRefreshCredits={onRefreshCredits}
           />
         </div>
 

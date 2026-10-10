@@ -1,177 +1,242 @@
 # Product Requirements Document (PRD)
 
-## 🏛️ FinanceAgent: Enterprise Financial Report Analyzer
+## 🏛️ FinanceAgent: Enterprise Financial Report Analyzer & SaaS Platform
 
-**Document Version:** 1.0.0  
+**Document Version:** 2.1.0  
 **Status:** Approved / In Production  
-**Target Release:** Production v1.0  
-**Owner:** Product & Architecture Team  
-**Last Updated:** September 2026  
+**Target Release:** Production Enterprise SaaS  
+**Owner:** Product, RAG Architect & Full-Stack Systems Team  
+**Last Updated:** October 2026  
 
 ---
 
 ## 1. Executive Summary & Vision
 
-**FinanceAgent** is an enterprise-grade AI financial intelligence platform engineered to parse, analyze, verify, and visualize complex corporate earnings reports (SEC Form 10-Q, 10-K, and International Annual Reports up to 250+ pages). 
+**FinanceAgent** is a production-grade, subscription-based financial intelligence SaaS platform engineered to parse, verify, audit, and analyze complex corporate earnings reports (SEC Form 10-K, 10-Q, and International Annual Reports up to 250+ pages).
 
-Unlike generic LLM wrappers that suffer from numerical hallucinations, context truncation, and non-verifiable claims, FinanceAgent introduces a **zero-trust deterministic grounding boundary**. Specialized AI agents extract candidates, while mathematical computations, verbatim citation matching, and conflict reconciliations execute in 100% deterministic Python algorithms outside the LLM.
+Unlike standard LLM wrappers that produce catastrophic numerical hallucinations, context truncation, and untraceable answers, FinanceAgent introduces a **dual-plane zero-trust architecture**:
+1. **Probabilistic Multi-Agent Plane (LLMs)**: Generates candidate extractions, synthesizes corporate guidance, and handles natural language research queries.
+2. **Deterministic Verification Plane (Python & DuckDB)**: Validates numbers via 100% exact verbatim substring matching against raw PDF text, runs in-memory analytical SQL reconciliations, and executes strict mathematical margin formulas outside the model.
 
-### Core Value Proposition
-- **0% Financial Metric Hallucination**: Strict substring verification guarantees figures match raw source text.
-- **100% Verifiable Citations**: Every metric is linked to an exact page number and verbatim supporting quote.
-- **Blockchain Cryptographic Integrity**: Every filing receives a SHA-256 Merkle hash (`VERIFIED_IMMUTABLE`) to ensure non-repudiation.
-- **Enterprise RBAC & Multi-Tenancy**: Organization isolation (`FinanceCorp Global`), role presets, teammate invites, and filterable audit trails.
-- **Explainable Financial Attribution**: Interactive Recharts SHAP Waterfall charting to decompose profit drivers vs. cost headwinds.
+### Core Value Propositions
+- **0.0% Financial Hallucination**: Every displayed figure must strictly match raw document text verbatim.
+- **Mathematical Hybrid RAG**: Reciprocal Rank Fusion (RRF, $k=60$) combining dense semantic vectors with BM25 lexical token matching and financial synonym expansion.
+- **Deterministic Agent Fault-Tolerance**: Multi-tiered fallback hierarchy ensuring that if specialized LLM agents fail, deterministic direct statement extractors and DuckDB heuristics maintain service continuity.
+- **Explainable AI (SHAP) Game-Theoretic Attribution**: Cooperative Shapley value decomposition ($\phi_i$) quantifying the exact financial drivers boosting or dragging net earnings.
+- **Cryptographic Document Immutability**: Every document receives a SHA-256 fingerprint seal (`VERIFIED_IMMUTABLE`) to ensure non-repudiation and zero-tamper audit trails.
+- **SaaS Subscription & Atomic Credit Accounting**: Three customer tiers (Basic, Pro, Premium), real-time usage meters, atomic debit ledgers, and secure payment sandbox integration.
 
 ---
 
 ## 2. Problem Statement & Target Audience
 
 ### 2.1 The Problem
-Parsing 80 to 250+ page corporate filings presents severe challenges for financial professionals:
-1. **Hallucination of Critical Metrics**: Standard LLMs fabricate metrics or confuse prior-year figures with current quarters.
-2. **Phantom Page Citations**: AI chatbots generate page references that do not contain the claimed figures.
-3. **Context Truncation**: Core financial statements (buried on pages 100–200) are truncated by standard context windows.
-4. **Opaque Black-Box Outputs**: No breakdown of why Net Profit changed (lack of driver vs. headwind attribution).
-5. **Security & Malware Risks**: Malicious PDF active scripts (`/JavaScript`, `/Launch`) disguised as financial reports pose malware threats to enterprise servers.
-6. **Cross-Tenant Data Exposure**: Unisolated RAG models risk exposing confidential pre-release earnings across organizations or unauthorized roles.
+Parsing 80 to 250+ page corporate filings presents severe challenges for finance professionals:
+1. **Numerical Hallucination**: Generic LLMs fabricate earnings figures or confuse prior-year benchmarks with current quarters.
+2. **Phantom Page Citations**: Standard AI chatbots invent page citations that do not contain the claimed disclosures.
+3. **Context Truncation**: Critical financial tables (buried on pages 100–220) get dropped by fixed context windows.
+4. **Opaque Black-Box Outputs**: No mathematical breakdown explaining *why* Net Profit shifted (lack of driver vs. headwind attribution).
+5. **Agent Cascading Failures**: Traditional multi-agent pipelines crash when an upstream LLM times out or returns malformed JSON.
+6. **Malware & Security Vulnerabilities**: Malicious PDFs containing active exploit vectors (`/JavaScript`, `/Launch`) disguised as earnings reports can compromise enterprise servers.
 
 ### 2.2 Target User Personas
-* **Equity Research Analysts**: Needs rapid, verified extraction of earnings metrics, guidance, and YoY margins across 10-K/10-Q filings.
-* **Portfolio & Investment Managers**: Requires immediate executive summary analysis and SHAP waterfall attribution of profitability drivers.
-* **Risk & Compliance Officers**: Needs verified audit logs, SHA-256 cryptographic document seals, and zero active-script security validation.
-* **CFO Office & Corporate Finance**: Requires secure multi-tenant role-based access, team sharing, and standardized metric scorecards.
+* **Equity Research Analysts**: Rapid extraction of earnings, guidance, and YoY margins across multiple filings.
+* **Portfolio & Investment Managers**: Executive summary scorecards and SHAP waterfall attribution of profitability drivers.
+* **Risk & Compliance Officers**: Cryptographic document seals, audit logs, and zero-script security scans.
+* **Corporate Finance & CFO Office**: Real-time credit monitoring, multi-document comparison, and verified PDF reports.
 
 ---
 
-## 3. Product Goals & Key Objectives
+## 3. Product Goals & Target Benchmarks
 
 | Goal | Description | Target Metric |
 | :--- | :--- | :--- |
-| **Grounding Precision** | Ensure zero numerical hallucinations in core metrics | 100% Verbatim Substring Match |
-| **Citation Traceability** | Provide verifiable page links and quotes for all extracted data | 100% Verifiable Citations |
-| **Ingestion Performance** | Locate primary financial statements in large filings | < 2.0 Seconds (250+ pages) |
-| **Document Integrity** | Prevent malicious script execution & post-upload tampering | SHA-256 Cryptographic Seal |
-| **Enterprise Governance** | Full RBAC isolation and audit logging | SOC2-Compliant Filterable Logs |
-| **Responsive UX** | Desktop console + responsive mobile layout (375px+) | 100% Mobile Viewport Parity |
+| **Grounding Precision** | Zero numerical hallucinations in core metrics | 100% Verbatim Substring Match |
+| **Citation Traceability** | Verifiable page links and verbatim quotes | 100% Verified Page Citations |
+| **Ingestion Performance** | Locate primary financial statements | < 2.0 Seconds (250+ pages) |
+| **RAG Retrieval Precision** | Hybrid RRF retrieval across multi-page tables | Mean Reciprocal Rank (MRR) > 0.92 |
+| **Fault Recovery** | Graceful fallback when LLM agents fail | 0% Unhandled Pipeline Crashes |
+| **Document Integrity** | Block active PDF exploit vectors | 100% Malicious Script Quarantine |
+| **SaaS Billing Accuracy** | Atomic credit transactions without race conditions | 100% Ledger Consistency |
 
 ---
 
-## 4. Functional Requirements
+## 4. Mathematical Formulations & Pipelines
 
-### 4.1 Authentication, Enterprise RBAC & Governance
-* **FR-1.1 Corporate Sign-In & Google OAuth 2.0**: Support standard email/password authentication alongside Google Workspace OAuth (`/api/v1/auth/google`).
-* **FR-1.2 Role Presets**: Quick evaluation switcher supporting 3 distinct role tiers:
-  * **Admin**: User provisioning, teammate invitations (`/api/v1/admin/invite`), org config, filterable audit log access.
-  * **Analyst**: File upload, multi-agent analysis execution, interactive visualization, document RAG chat.
-  * **Viewer**: Read-only document viewing, pre-computed scorecards, and audit receipts.
-* **FR-1.3 Multi-Tenant Isolation**: Enforce `organization_id` boundaries across all documents, database models, and chat histories (`FinanceCorp Global`).
-* **FR-1.4 Filterable Enterprise Audit Trails**: Log system actions with real-time filters by action type (e.g., `DOCUMENT_UPLOAD`, `ANALYSIS_RUN`), user email, and document ID.
+### 4.1 Mathematical Hybrid RAG Pipeline (BM25 + Dense Vectors + RRF)
 
-### 4.2 File Ingestion & Security Validation Pipeline
-* **FR-2.1 Magic Byte Verification**: Validate `%PDF-1.x` magic bytes to block masqueraded binary files.
-* **FR-2.2 Anti-Malware Binary Scanner**: Pre-ingestion scanning for active exploit vectors (`/JavaScript`, `/Launch`, `/EmbeddedFiles`, `/URI`) to sanitize files before parsing.
-* **FR-2.3 Cryptographic SHA-256 Blockchain Seal**: Compute SHA-256 checksum upon upload to assign an immutable cryptographic seal (`VERIFIED_IMMUTABLE`) stored with timestamp metadata.
-* **FR-2.4 PyMuPDF Fast Parsing**: Extract text, coordinates, and structure across 250+ page filings in under 2 seconds.
+The retrieval engine combines sparse lexical indexing (for exact ticker, financial code, and currency matching) with dense semantic embeddings (for conceptual queries), fused via **Reciprocal Rank Fusion (RRF)**.
 
-### 4.3 Multi-Agent Extraction & Deterministic Engine
-* **FR-3.1 LangGraph Supervisor Orchestration**: Supervisor node routing execution across specialized agent nodes:
-  1. **Section Locator Agent**: Statement density scoring heuristics to isolate primary balance sheet, income statement, and cash flow pages.
-  2. **Financial Extraction Agent**: Extracts Revenue, Net Income, Gross Profit, Cash Flow, and Operating Margins.
-  3. **Guidance & Outlook Agent**: Extracts forward-looking capex, revenue guidance, and executive targets.
-  4. **Risk Factors Agent**: Extracts regulatory, liquidity, interest rate, and operational risk factors.
-  5. **Grounded Interpretation Agent**: Synthesizes verified disclosures into structured executive summaries.
-* **FR-3.2 Deterministic Grounding Validator**: Substring validation enforcing that extracted candidates strictly exist verbatim in source raw text.
-* **FR-3.3 Source Conflict Reconciliation Engine**: Resolves discrepancies across main financial tables vs. footnote disclosures using explicit hierarchy rules.
-* **FR-3.4 Arithmetic Calculation Engine**: Computes Gross Margin %, Operating Margin %, and YoY percentage changes outside the LLM.
+#### 1. Sparse Lexical BM25 Scoring
+Given a query $Q$ with query terms $q_1, q_2, \dots, q_n$ and document chunk $D$:
+$$\text{Score}_{\text{BM25}}(D, Q) = \sum_{i=1}^n \text{IDF}(q_i) \cdot \frac{f(q_i, D) \cdot (k_1 + 1)}{f(q_i, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}$$
+Where:
+- $\text{IDF}(q_i) = \ln \left( \frac{N - n(q_i) + 0.5}{n(q_i) + 0.5} + 1 \right)$
+- $f(q_i, D)$ is term frequency in chunk $D$.
+- $|D|$ is chunk length; $\text{avgdl}$ is average chunk length across filing.
+- Calibration constants: $k_1 = 1.5$ (term saturation), $b = 0.75$ (length penalty).
+- **Financial Synonym Expansion Matrix**: Automatically expands tokens $\mathcal{M}(q)$ such that:
+  $$\text{PAT} \leftrightarrow \text{Profit After Tax} \leftrightarrow \text{Net Income}$$
+  $$\text{Topline} \leftrightarrow \text{Revenue} \leftrightarrow \text{Turnover} \leftrightarrow \text{Gross Sales}$$
+  $$\text{Capex} \leftrightarrow \text{Capital Expenditure} \leftrightarrow \text{Additions to PPE}$$
 
-### 4.4 Financial Analytics & Visualizations
-* **FR-4.1 Standardized 8-Metric Scorecard**: Displays Revenue, Gross Margin %, Net Income, Operating Cash Flow, YoY Growth, Guidance, Headcount, and Key Risks with:
-  * Single-line confidence badges.
-  * Neutral amber indicators for low confidence (red reserved exclusively for errors).
-  * 4-quarter SVG sparklines.
-* **FR-4.2 Recharts SHAP Waterfall Attribution**: Interactive waterfall chart decomposing baseline target earnings into revenue expansion (+), margin gains (+), vs. cost headwinds (- SG&A, tax provisions) with glassmorphism tooltips.
-* **FR-4.3 Executive Summary Panel**: Grounded summary synthesized exclusively from verified disclosures.
+#### 2. Dense Semantic Vector Cosine Similarity
+Using dense embedding representation vectors $\mathbf{q} = \mathcal{E}(Q)$ and $\mathbf{d} = \mathcal{E}(D)$:
+$$\text{Score}_{\text{Dense}}(Q, D) = \text{CosineSim}(\mathbf{q}, \mathbf{d}) = \frac{\mathbf{q} \cdot \mathbf{d}}{\|\mathbf{q}\|_2 \|\mathbf{d}\|_2}$$
 
-### 4.5 Document-Scoped RAG Chat & In-Chat PDF Attachment
-* **FR-5.1 Isolated Document RAG**: Scope search indexes strictly to the selected document using BM25 token matching with financial synonym expansion (`PAT`, `EBITDA`, `Topline`, `Borrowings`).
-* **FR-5.2 In-Chat PDF Upload**: Direct paperclip icon in chat interface allowing instant PDF attachment, auto-ingestion, security scan, and real-time Q&A without changing views.
-* **FR-5.3 Verifiable Inline Citations**: Every RAG answer must contain inspectable page citations and verbatim source excerpts.
-
-### 4.6 Modern Responsive User Interface
-* **FR-6.1 Enterprise Dark Aesthetic**: Refined dark palette (`#0b0f19` background, `#111827` cards, emerald/amber status badges) with high-contrast text.
-* **FR-6.2 Contained 3D Hero Particles**: Three.js particle constellation strictly bounded to landing page hero section, auto-disabled on mobile viewports (< 768px).
-* **FR-6.3 Mobile Viewport (375px+) Support**: 2-column mobile metric grid (`grid-cols-2`), sticky mobile chat input, and pinned bottom navigation bar (`md:hidden`).
+#### 3. Reciprocal Rank Fusion (RRF) Formulation
+To prevent dense or sparse scores from dominating due to disparate scale calibrations, FinanceAgent ranks candidate chunks independently and merges them via RRF:
+$$RRF(d) = \sum_{m \in M} \frac{w_m}{k + r_m(d)}$$
+Where:
+- $M = \{\text{Dense}, \text{BM25}\}$ is the set of retrieval modalities.
+- $r_m(d) \in \{1, 2, \dots, K\}$ is the 1-based rank of document chunk $d$ in system $m$.
+- $k = 60$ is the standard smoothing parameter preventing high-rank saturation.
+- $w_m$ is the modality weight ($w_{\text{BM25}} = 0.5$, $w_{\text{Dense}} = 0.5$).
+- Top-$K$ ($K=5$) fused chunks are injected into the generator context with exact page headers.
 
 ---
 
-## 5. Non-Functional Requirements (NFRs)
+### 4.2 Mathematical Explainable AI (SHAP) Attribution
 
-### 5.1 Performance & Latency
-- **Document Parsing**: Parse 200+ page PDF text and metadata in < 2.0 seconds.
-- **Multi-Agent Extraction**: Complete full financial scorecard extraction in < 8.0 seconds.
-- **RAG Query Response**: Deliver grounded chat response with citations in < 1.5 seconds.
+FinanceAgent models corporate financial performance through **Cooperative Game Theory**, treating each financial driver $i$ as a player in a game whose outcome $v(S)$ represents earnings performance.
 
-### 5.2 Security & Compliance
-- **SOC2 Ready Audit Logging**: Every upload, authentication attempt, document deletion, and analysis request logged with immutable timestamp, user ID, and IP address.
-- **Zero-Trust Script Execution**: 100% blocking of active PDF scripts (`/JavaScript`, `/Launch`).
-- **Data Encrypted at Rest & in Transit**: TLS 1.3 for API endpoints, AES-256 for persistent database storage.
+#### 1. Shapley Value Formulation
+The marginal attribution score $\phi_i(v)$ for driver $i$ across driver set $N$ is:
+$$\phi_i(v) = \sum_{S \subseteq N \setminus \{i\}} \frac{|S|! \, (|N| - |S| - 1)!}{|N|!} \left[ v(S \cup \{i\}) - v(S) \right]$$
+Where:
+- $N$ is the set of operational drivers:
+  $$N = \{\text{Volume Expansion}, \text{Pricing Power}, \text{Operating Leverage}, \text{Raw Material Inflation}, \text{Depreciation Carry}\}$$
+- $S$ is a subset coalition of active financial factors.
+- $v(S)$ is the characteristic financial outcome evaluated for that coalition.
 
-### 5.3 Reliability & Accuracy
-- **Zero Financial Hallucination**: 100% of numerical figures displayed in scorecards verified against raw text.
-- **System Uptime**: 99.9% API service availability.
-- **Fault Recovery**: Cyclical fallback handlers in LangGraph supervisor graph to retry extraction if parsing yields ungrounded metrics.
-
----
-
-## 6. Technical Stack & Architecture Summary
-
-| Component | Framework / Tool | Purpose |
-| :--- | :--- | :--- |
-| **Frontend** | React 18, Vite 5, Tailwind CSS | High-performance SPA with modern dark enterprise styling |
-| **Visualizations** | Recharts, Lucide React, Three.js | SHAP Waterfall chart, SVG sparklines, hero particle effects |
-| **Backend API** | FastAPI (Python 3.11+) | Async REST API endpoints, Pydantic data schemas |
-| **Orchestrator** | LangGraph & LangChain | Multi-agent state machine supervisor graph |
-| **PDF Extraction** | PyMuPDF (`fitz`) | High-speed text extraction and layout coordinate mapping |
-| **Database & Auth** | SQLAlchemy, SQLite, PyJWT | Multi-tenant relational schema, JWT auth & OAuth 2.0 |
-| **Vector / Search** | BM25 Engine with Synonym Matrix | Document-scoped RAG Q&A retrieval |
+#### 2. Efficiency Axiom (Additivity to Net Performance)
+The sum of all SHAP attribution values strictly equals the total difference between the observed earnings outcome and the baseline period benchmark:
+$$\sum_{i \in N} \phi_i(v) = v(N) - v(\emptyset) = \text{Reported Metric} - \text{Baseline Benchmark}$$
+- **Positive Drivers ($\phi_i > 0$)**: Plotted in Emerald Green (`#10B981`) as tailwinds.
+- **Negative Drivers ($\phi_i < 0$)**: Plotted in Coral Red (`#EF4444`) as operational headwinds.
 
 ---
 
-## 7. Key User Workflows
+### 4.3 In-Memory DuckDB Analytical Verification Engine
+
+Extracted tabular disclosures are loaded into an in-memory **DuckDB OLAP instance** to execute deterministic SQL balance equations:
+
+```sql
+-- 1. Income Statement Balance Verification
+SELECT 
+  (revenue - cogs) AS calculated_gross_profit,
+  gross_profit AS reported_gross_profit,
+  ABS((revenue - cogs) - gross_profit) < 1.0 AS is_gross_margin_balanced,
+  (gross_profit - opex) AS calculated_ebit,
+  operating_income AS reported_ebit,
+  (operating_income - tax_provision - net_interest) AS calculated_net_income,
+  net_income AS reported_net_income
+FROM financial_statement_table;
+```
+If SQL verification succeeds, metrics are classified as `DIRECT_STATEMENT` (Confidence: 100%). If slight rounding discrepancies exist, they are flagged as `COMPUTED`.
+
+---
+
+## 5. Multi-Agent Orchestration & "What If Agents Fail?"
+
+### 5.1 Specialized Agent Roles
+The system utilizes a coordinated LangGraph DAG state machine:
+1. **Supervisor Agent**: Inspects document state, coordinates execution, tracks execution budget, and handles recovery routing.
+2. **Section Density Locator Agent**: Computes keyword density heatmaps across pages to isolate Consolidated Balance Sheets, Income Statements, and Cash Flow statements.
+3. **Financial Statement Extractor Agent**: Generates candidate numbers for Revenue, Net Profit, Gross Margin, and Cash Flows.
+4. **Auditor & Substring Verifier Agent**: Strictly tests whether each candidate number exists verbatim in the raw PDF text for that page.
+5. **Citation Resolver Agent**: Locates bounding-box coordinates and page numbers for source audit rendering.
+6. **SHAP Attribution Agent**: Calculates marginal contribution values for financial drivers.
+
+---
+
+### 5.2 Failure Modes & Deterministic Fallback Hierarchy ("What If That Fails?")
+
+When working with LLM agents in production, failure is inevitable. FinanceAgent is engineered so that **every failure mode has an automatic deterministic fallback**:
+
+| Agent / Step | Potential Failure Mode | Root Cause | Fallback Action & Recovery Mechanism |
+| :--- | :--- | :--- | :--- |
+| **Section Locator Agent** | Fails to detect statement pages or returns page out of bounds | Non-standard filing table of contents, missing headers | **Heuristic Density Fallback**: Scans all document pages for high-frequency financial balance words (`Consolidated Statements of Operations`, `Assets`, `Cash Flows`) using PyMuPDF regex scanner. Identifies top 3 candidate statement pages deterministically. |
+| **Financial Extractor Agent** | LLM outputs hallucinated number not in filing | Model confusion between years or training priors | **Verbatim Substring Rejector**: Auditor agent executes `raw_text.find(candidate)`. If string is absent, candidate is **rejected immediately**. System initiates **Regex Bounding Scanner** over verified tables to pull the raw cell value. |
+| **LLM Provider API** | Provider timeout, HTTP 500, or rate-limit | External LLM outage | **Circuit Breaker & DuckDB Engine**: Circuit breaker trips. Pipeline falls back to **In-Memory DuckDB Statement Parser**: reads raw extracted PyMuPDF tabular blocks, queries standard coordinates, and outputs core scorecard without requiring any LLM API calls. |
+| **Auditor Agent** | Discrepancy between footnote and primary statement | Conflicting numbers reported in narrative vs table | **Hierarchy Reconciliation Engine**: Pre-set strict priority tree: **Audited Primary Statements > Footnote Disclosures > Executive Management Discussion (MD&A)**. The primary statement figure is chosen, and a footnote note is appended. |
+| **RAG Retrieval Agent** | Search query yields 0 matching chunks or low similarity | Obscure query phrasing or filing omissions | **Zero-Hallucination Refusal Guardrail**: If highest RRF score $< 0.015$, agent refuses to speculate: *"Figure not disclosed in the provided filing with audit certainty."* Zero guessing allowed. |
+| **Malware / Security Scanner** | PDF contains malicious `/JavaScript` or corrupt header | Malicious attack or damaged file | **Security Quarantine**: File is rejected at the API gateway with HTTP 400. File stream is discarded immediately, never written to disk, and incident is logged to the immutable security audit log. |
+| **Payment / Credit System** | Gateway webhook timeout or missing API keys | Payment gateway network drop | **Sandbox Simulation Fallback**: Immediate self-service activation in test sandbox mode. Grants plan capacity instantly without blocking the user. |
 
 ```mermaid
-sequenceDiagram
-    autonumber
-    actor Analyst as Financial Analyst
-    participant UI as Responsive Frontend UI
-    participant API as FastAPI Backend
-    participant Sec as Security & Cryptography Engine
-    participant Agents as LangGraph Multi-Agent Engine
-    participant Det as Grounding & Arithmetic Engine
-
-    Analyst->>UI: Upload Financial Filing (PDF)
-    UI->>API: POST /api/v1/documents/upload
-    API->>Sec: Validate Magic Bytes (%PDF-) & Scan Malware Vectors
-    Sec-->>API: Status: Clean (No /JavaScript or /Launch)
-    API->>Sec: Generate SHA-256 Hash Seal
-    Sec-->>API: Hash: SHA-256 (VERIFIED_IMMUTABLE)
-    API->>Agents: Trigger Analysis (Supervisor Node)
-    Agents->>Agents: Statement Density Scoring (Locate Pages)
-    Agents->>Agents: Extract Candidate Metrics (Financial, Guidance, Risk)
-    Agents->>Det: Validate Verbatim Substring & Compute YoY/Margins
-    Det-->>Agents: Verified Metrics & Reconciled Sources
-    Agents-->>API: Standardized Scorecard & SHAP Waterfall Attribution
-    API-->>UI: Return Analysis Payload
-    UI-->>Analyst: Render Scorecards, SHAP Waterfall & Audit Receipt
+flowchart TD
+    A[Incoming PDF Document] --> B{Magic Byte & Malware Scan}
+    B -- Exploit Detected --> C[QUARANTINE & HTTP 400 REJECT]
+    B -- Clean %PDF- --> D[SHA-256 Hash Seal & PyMuPDF Parse]
+    
+    D --> E[Supervisor Agent Orchestration]
+    E --> F{Section Locator Agent}
+    
+    F -- Failure / Missing Pages --> F1[Heuristic Density Fallback Scanner]
+    F -- Success --> G[Financial Extractor Agent]
+    F1 --> G
+    
+    G --> H{Auditor Substring Verification}
+    H -- Substring Miss (Hallucination) --> H1[Direct Table DuckDB Regex Scanner]
+    H -- Verbatim Match Found --> I[Arithmetic Engine & YoY Computation]
+    H1 --> I
+    
+    I --> J{LLM Synthesis Agent}
+    J -- LLM Timeout / Error --> J1[Deterministic Template Generator]
+    J -- LLM Success --> K[Final Output: Scorecard + SHAP + Citations]
+    J1 --> K
 ```
 
 ---
 
-## 8. Success Metrics & Acceptance Criteria
+## 6. SaaS Subscription Architecture & Credit Accounting
 
-- **14/14 Automated Tests Passing**: All unit and integration tests passing (`pytest tests/`).
-- **Verbatim Match Rate**: 100% of financial numbers mapped to source document substrings.
-- **Security Validation**: Zero unhandled PDF active script uploads.
-- **Cross-Tenant Isolation**: Zero cross-organization document access allowed.
-- **Mobile Usability**: All UI features operational on 375px mobile viewports without horizontal scrolling overflow.
+### 6.1 Customer Tiers & Capacity Specifications
+
+| Dimension | BASIC (Free) | PRO (₹299 / mo) | PREMIUM (₹799 / mo) |
+| :--- | :--- | :--- | :--- |
+| **Monthly Credit Allowance** | 100 credits | 500 credits | 2,000 credits |
+| **Active Document Slots** | 2 concurrent filings | 10 concurrent filings | 50 concurrent filings |
+| **RAG Questions per Filing** | 5 questions / doc | 10 questions / doc | 20 questions / doc |
+| **Report Downloads (PDF/JSON)**| Locked (View Only) | Unlimited verified downloads | Unlimited executive downloads |
+| **Multi-Year Comparisons** | Not Available | Supported | Supported |
+| **Processing Priority** | Standard | High Priority | Dedicated Compute |
+
+### 6.2 Atomic Credit Accounting & Ledger Mechanics
+Every credit transaction is written atomically to an immutable ledger table (`credit_transactions`) using ACID database transactions:
+$$\text{Balance}_t = \text{Balance}_{t-1} - \text{Debit Amount}$$
+
+* **Deduction Rates**:
+  - `DOCUMENT_UPLOAD`: 10 credits (Parsing, OCR, vector indexing)
+  - `RAG_QUERY`: 15 credits (Hybrid RRF search, LLM answer synthesis)
+  - `MULTI_YEAR_COMPARISON`: 25 credits (Cross-filing trend analysis)
+* **Real-Time Notification Thresholds**:
+  - `WARNING` ($\le 20\%$ allowance remaining): Yellow banner notification.
+  - `CRITICAL` ($\le 10\%$ allowance remaining): Amber alert banner with upgrade CTA.
+  - `EXHAUSTED` ($0$ credits): Hard block on write actions; user guided to upgrade modal.
+
+---
+
+## 7. Security, Compliance & Data Isolation
+
+1. **Multi-Tenant Scoping**: All documents, chunks, chat threads, and credit records have an explicit `organization_id` foreign key. Query-level filtering prevents cross-tenant access.
+2. **Cryptographic SHA-256 Seal**: Documents are hashed with SHA-256 upon reception. Fingerprints are recorded in the audit trail to verify that analyzed filings have not been altered.
+3. **Malware Vector Prevention**: The parser rejects active script PDF dictionary keys:
+   - `/JavaScript`, `/JS`
+   - `/Launch`, `/EmbeddedFiles`
+   - `/SubmitForm`, `/ImportData`
+4. **SOC2 Audit Trail**: Real-time structured logging of all security events (`LOGIN`, `UPLOAD`, `QUERY`, `DELETE`, `UPGRADE`).
+
+---
+
+## 8. Verification & Test Suite Acceptance Criteria
+
+- **16/16 Platform Tests Passing** (`pytest tests/test_saas_platform.py`):
+  - Strict customer-to-admin privilege separation.
+  - Plan selection, document quotas, and question caps.
+  - Atomic credit ledger balance and debit verification.
+  - Report download gating (Basic vs Pro/Premium).
+  - Private document ownership isolation.
+- **Vite Production Bundle Verification**: `npm run build` exits with code 0.
+- **Zero Numerical Hallucination**: 100% of reported figures match source document substrings.

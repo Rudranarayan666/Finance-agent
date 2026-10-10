@@ -1,20 +1,35 @@
-import React, { useState } from 'react';
-import { X, Lock, Mail, User, ShieldCheck, CheckCircle2, AlertTriangle, KeyRound } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Lock, Mail, User, ShieldCheck, CheckCircle2, AlertTriangle, Sparkles, ArrowRight } from 'lucide-react';
 import { api } from '../services/api';
 
-export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSuccess, initialMode = 'login' }) {
+export default function AuthModal({ 
+  isOpen, 
+  onClose, 
+  onAuthSuccess, 
+  onLoginSuccess, 
+  initialMode = 'login',
+  selectedPlan = null 
+}) {
   const [mode, setMode] = useState(initialMode); // 'login', 'register', 'forgot'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState('analyst');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMsg, setSuccessMsg] = useState(null);
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode || 'login');
+      setError(null);
+      setSuccessMsg(null);
+      setEmail('');
+      setPassword('');
+      setFullName('');
+    }
+  }, [isOpen, initialMode]);
 
-  const isAdminEmail = email.toLowerCase().includes('admin');
+  if (!isOpen) return null;
 
   const handleSuccessCallback = (user) => {
     if (onLoginSuccess) onLoginSuccess(user);
@@ -25,11 +40,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
     setError(null);
     setLoading(true);
     try {
-      const gRole = isAdminEmail ? 'admin' : role;
       const res = await api.googleLogin(
-        isAdminEmail ? 'admin.google@finance.corp' : 'google.analyst@finance.corp',
-        isAdminEmail ? 'Google Workspace Admin' : 'Google Workspace Analyst',
-        gRole
+        'google.user@finance.corp',
+        'Google Workspace User',
+        'customer'
       );
       handleSuccessCallback(res.user);
       onClose();
@@ -47,7 +61,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
 
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail.includes('@') || !cleanEmail.includes('.')) {
-      setError('Please provide a valid corporate email address.');
+      setError('Please provide a valid email address.');
       return;
     }
     if (mode !== 'forgot' && password.length < 6) {
@@ -62,9 +76,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
         handleSuccessCallback(res.user);
         onClose();
       } else if (mode === 'register') {
-        const finalRole = cleanEmail.includes('admin') ? 'admin' : role;
-        await api.register(cleanEmail, password, fullName || cleanEmail.split('@')[0], finalRole);
-        // Direct login upon account registration
+        await api.register(cleanEmail, password, fullName.trim() || cleanEmail.split('@')[0], 'customer');
+        // Direct auto-login upon account registration
         const res = await api.login(cleanEmail, password);
         handleSuccessCallback(res.user);
         onClose();
@@ -79,81 +92,66 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
     }
   };
 
-  const handleQuickPreset = async (presetRole) => {
-    setError(null);
-    setLoading(true);
-    const presets = {
-      analyst: { email: 'analyst@finance.corp', pass: 'AnalystPass123!' },
-      admin: { email: 'admin@finance.corp', pass: 'AdminPass123!' },
-      viewer: { email: 'viewer@finance.corp', pass: 'ViewerPass123!' }
-    };
-    const cred = presets[presetRole];
-    try {
-      const res = await api.login(cred.email, cred.pass);
-      handleSuccessCallback(res.user);
-      onClose();
-    } catch (err) {
-      setError(`Preset login error: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 font-mono text-zinc-900">
-      <div className="bg-white border-3 border-black shadow-[8px_8px_0px_0px_#000000] max-w-md w-full p-6 text-black relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/65 backdrop-blur-xs p-4 font-mono text-zinc-900 animate-in fade-in">
+      <div className="bg-white border-3 border-black shadow-[8px_8px_0px_0px_#000000] max-w-md w-full p-6 sm:p-7 text-black relative">
         
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-black p-1 border-2 border-black bg-zinc-100 hover:bg-[#FFE600] transition"
+          className="absolute top-4 right-4 text-black p-1 border-2 border-black bg-zinc-100 hover:bg-[#FFE600] transition cursor-pointer"
         >
           <X className="w-4 h-4 stroke-[3]" />
         </button>
 
-        {/* Modal Title */}
+        {/* Modal Header */}
         <div className="mb-4 pb-3 border-b-2 border-black">
           <div className="neo-badge-yellow mb-1.5 text-[10px]">
             <Lock className="w-3 h-3 stroke-[3]" />
-            <span>ROLE-BASED ACCESS CONTROL (RBAC)</span>
+            <span>FINANCEAGENT SECURE PORTAL</span>
           </div>
-          <h2 className="text-lg font-black text-black uppercase tracking-wider">
-            {mode === 'forgot' ? 'RESET PASSWORD' : 'PORTAL AUTHENTICATION'}
+          <h2 className="text-xl font-black text-black uppercase tracking-wider">
+            {mode === 'forgot' ? 'RESET PASSWORD' : mode === 'register' ? 'CREATE YOUR ACCOUNT' : 'SIGN IN TO WORKSPACE'}
           </h2>
         </div>
 
+        {/* Selected Tier Banner (if clicked from landing page) */}
+        {selectedPlan && (
+          <div className="mb-3 p-2 bg-[#FFF9C4] border-2 border-black flex items-center justify-between text-xs">
+            <span className="font-black uppercase flex items-center gap-1">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>CHOSEN TIER:</span>
+            </span>
+            <span className="neo-badge bg-[#FFE600] text-black font-black uppercase text-[10px]">
+              {selectedPlan.toUpperCase()} PLAN
+            </span>
+          </div>
+        )}
+
         {/* Success Alert */}
         {successMsg && (
-          <div className="neo-card-emerald p-2.5 mb-3 text-xs font-bold text-green-950 flex items-start gap-2">
-            <CheckCircle2 className="w-4 h-4 text-green-700 flex-shrink-0 mt-0.5" />
+          <div className="p-2.5 mb-3 bg-emerald-100 border-2 border-black text-emerald-950 text-xs font-bold flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 flex-shrink-0 mt-0.5" />
             <span className="font-sans text-[11px]">{successMsg}</span>
           </div>
         )}
 
         {/* Error Alert */}
         {error && (
-          <div className="p-2.5 bg-[#FEE2E2] border-2 border-black text-rose-950 mb-3 text-xs font-bold flex items-start gap-2">
+          <div className="p-2.5 mb-3 bg-[#FEE2E2] border-2 border-black text-rose-950 text-xs font-bold flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 text-rose-700 flex-shrink-0 mt-0.5" />
             <span className="font-sans text-[11px]">{error}</span>
           </div>
         )}
 
-        {/* Admin detection hint */}
-        {isAdminEmail && (
-          <div className="p-2 bg-[#FFF9C4] border-2 border-black text-[11px] text-black font-sans mb-3 flex items-center gap-1.5 font-bold">
-            <ShieldCheck className="w-4 h-4 text-black stroke-[2.5]" />
-            <span>Administrator access granted automatically for this email address.</span>
-          </div>
-        )}
-
         {mode !== 'forgot' && (
           <>
-            {/* Google Sign In */}
+            {/* 1. Google Auth at top */}
             <button
               type="button"
               onClick={handleGoogleLogin}
               disabled={loading}
-              className="neo-button-secondary w-full justify-center py-2.5 mb-3 bg-white hover:bg-zinc-50 border-2 border-black font-extrabold shadow-[2px_2px_0px_0px_#000]"
+              className="w-full flex items-center justify-center py-2.5 mb-3 bg-white hover:bg-zinc-50 border-2 border-black font-black text-xs uppercase shadow-[2px_2px_0px_0px_#000] cursor-pointer transition"
             >
               <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -161,12 +159,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
                 <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
               </svg>
-              <span>SIGN IN WITH GOOGLE</span>
+              <span>CONTINUE WITH GOOGLE</span>
             </button>
 
+            {/* Divider */}
             <div className="flex items-center gap-2 mb-3">
               <div className="h-[2px] bg-black flex-1" />
-              <span className="text-[10px] font-black uppercase text-zinc-500">OR CORPORATE EMAIL</span>
+              <span className="text-[10px] font-black uppercase text-zinc-500">OR WITH EMAIL</span>
               <div className="h-[2px] bg-black flex-1" />
             </div>
 
@@ -175,8 +174,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
               <button
                 type="button"
                 onClick={() => setMode('login')}
-                className={`py-1 text-xs font-bold uppercase transition ${
-                  mode === 'login' ? 'bg-[#FFE600] text-black font-extrabold border-2 border-black shadow-[2px_2px_0px_0px_#000]' : 'text-zinc-600 hover:text-black'
+                className={`py-1.5 text-xs font-black uppercase transition cursor-pointer ${
+                  mode === 'login' ? 'bg-[#FFE600] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]' : 'text-zinc-600 hover:text-black'
                 }`}
               >
                 SIGN IN
@@ -184,11 +183,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
               <button
                 type="button"
                 onClick={() => setMode('register')}
-                className={`py-1 text-xs font-bold uppercase transition ${
-                  mode === 'register' ? 'bg-[#FFE600] text-black font-extrabold border-2 border-black shadow-[2px_2px_0px_0px_#000]' : 'text-zinc-600 hover:text-black'
+                className={`py-1.5 text-xs font-black uppercase transition cursor-pointer ${
+                  mode === 'register' ? 'bg-[#FFE600] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]' : 'text-zinc-600 hover:text-black'
                 }`}
               >
-                REGISTER
+                SIGN UP
               </button>
             </div>
           </>
@@ -197,9 +196,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="space-y-3">
           
+          {/* Sign Up Username Field */}
           {mode === 'register' && (
             <div>
-              <label className="text-[10px] font-black text-black uppercase block mb-1">FULL NAME:</label>
+              <label className="text-[10px] font-black text-black uppercase block mb-1">USERNAME / FULL NAME:</label>
               <input
                 type="text"
                 required
@@ -211,20 +211,22 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
             </div>
           )}
 
+          {/* Email Field */}
           <div>
             <label className="text-[10px] font-black text-black uppercase block mb-1">
-              {mode === 'forgot' ? 'ACCOUNT EMAIL:' : 'CORPORATE EMAIL:'}
+              EMAIL ADDRESS:
             </label>
             <input
               type="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="analyst@finance.corp"
+              placeholder="user@example.com"
               className="neo-input"
             />
           </div>
 
+          {/* Password Field */}
           {mode !== 'forgot' && (
             <div>
               <label className="text-[10px] font-black text-black uppercase block mb-1">PASSWORD:</label>
@@ -239,39 +241,29 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
             </div>
           )}
 
-          {mode === 'register' && (
-            <div>
-              <label className="text-[10px] font-black text-black uppercase block mb-1">ACCESS TIER:</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="neo-input cursor-pointer"
-              >
-                <option value="analyst">Analyst (Extraction &amp; RAG)</option>
-                <option value="admin">Admin (Site-Wide Control &amp; Audits)</option>
-                <option value="viewer">Viewer (Read-Only Access)</option>
-              </select>
-            </div>
-          )}
-
+          {/* Forgot Password Link in Login Mode */}
           {mode === 'login' && (
             <div className="flex justify-end">
               <button 
                 type="button" 
                 onClick={() => setMode('forgot')}
-                className="text-[10px] font-bold text-zinc-600 hover:text-black underline"
+                className="text-[10px] font-bold text-zinc-600 hover:text-black underline cursor-pointer"
               >
                 FORGOT PASSWORD?
               </button>
             </div>
           )}
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
-            className="neo-button-primary w-full justify-center py-2.5 text-xs font-black shadow-[3px_3px_0px_0px_#000] mt-1"
+            className="neo-button-primary w-full justify-center py-2.5 text-xs font-black shadow-[3px_3px_0px_0px_#000] mt-2 cursor-pointer flex items-center gap-1.5"
           >
-            {loading ? 'PROCESSING...' : mode === 'login' ? 'SIGN IN WITH CREDENTIALS' : mode === 'register' ? 'CREATE ACCOUNT' : 'SEND RESET LINK'}
+            <span>
+              {loading ? 'PROCESSING...' : mode === 'login' ? 'SIGN IN' : mode === 'register' ? 'CREATE ACCOUNT & SELECT PLAN' : 'SEND RESET LINK'}
+            </span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
           
           {mode === 'forgot' && (
@@ -279,45 +271,13 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, onLoginSucce
               type="button"
               disabled={loading}
               onClick={() => setMode('login')}
-              className="neo-button-secondary w-full justify-center py-2 text-xs"
+              className="neo-button-secondary w-full justify-center py-2 text-xs cursor-pointer"
             >
               BACK TO SIGN IN
             </button>
           )}
 
         </form>
-
-        {/* Quick Role Presets */}
-        {mode === 'login' && (
-          <div className="mt-4 pt-3 border-t-2 border-black">
-            <span className="text-[10px] font-black text-zinc-500 uppercase tracking-wider block mb-1.5 text-center">
-              QUICK DEMO PRESETS:
-            </span>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickPreset('admin')}
-                className="neo-button-secondary text-[11px] py-1 justify-center bg-[#FFF9C4] font-black"
-              >
-                ADMIN
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickPreset('analyst')}
-                className="neo-button-secondary text-[11px] py-1 justify-center bg-[#E0F2FE] font-black"
-              >
-                ANALYST
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickPreset('viewer')}
-                className="neo-button-secondary text-[11px] py-1 justify-center bg-[#F4F4F5] font-black"
-              >
-                VIEWER
-              </button>
-            </div>
-          </div>
-        )}
 
       </div>
     </div>

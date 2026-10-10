@@ -14,6 +14,8 @@ from backend.app.core.security_scanner import SecurityScanner
 from backend.app.parser.pdf_parser import PDFDocumentParser, PDFParserError
 from backend.app.parser.document_parser import DocumentParser, DocumentParserError
 from backend.app.rag.rag_service import rag_service
+from backend.app.services.credit_service import CreditService
+from backend.app.services.subscription_service import SubscriptionService
 
 router = APIRouter(prefix="/chat", tags=["Grounded Chat & Attachments"])
 
@@ -46,6 +48,22 @@ async def attach_pdf_in_chat(
     Direct in-chat paperclip attachment: uploads PDF, validates security,
     creates SHA-256 seal, creates EvidenceRecords, and indexes for RAG chat immediately.
     """
+    # SaaS Plan Verification & Active Document Capacity Limit Check
+    SubscriptionService.check_active_document_limit(db, current_user)
+
+    upload_cost = getattr(settings, "UPLOAD_CREDIT_COST", 10)
+    if not (current_user.is_admin or current_user.role == "admin"):
+        if not CreditService.check_available_credits(db, current_user.id, upload_cost):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail={
+                    "error": "INSUFFICIENT_CREDITS",
+                    "message": f"Attaching and indexing a document requires {upload_cost} credits. Please upgrade or renew your plan.",
+                    "required_credits": upload_cost,
+                    "upgrade_available": True
+                }
+            )
+
     contents = await file.read()
     is_safe, reason, blockchain_seal = SecurityScanner.inspect_pdf(contents, file.filename)
     if not is_safe:
@@ -115,6 +133,27 @@ async def attach_pdf_in_chat(
 
     rag_service.index_document_chunks(new_doc.id, extracted["pages"], document_version="v1")
 
+    # Debit upload credits upon successful completion
+    if not (current_user.is_admin or current_user.role == "admin"):
+        CreditService.debit_credits(
+            db,
+            user_id=current_user.id,
+            amount=upload_cost,
+            transaction_type="upload_debit",
+            reason=f"In-chat document attachment: {file.filename}",
+            document_id=new_doc.id,
+            reference=f"attach_{new_doc.id}"
+        )
+        SubscriptionService.record_usage(
+            db,
+            user_id=current_user.id,
+            operation_type="upload",
+            credits_charged=upload_cost,
+            document_id=new_doc.id,
+            status="success",
+            idempotency_key=f"attach_{new_doc.id}"
+        )
+
     log_audit_event(
         db, action="in_chat_attach", user=current_user, document_id=new_doc.id, request=request,
         details={"filename": file.filename, "sha256_hash": file_hash}
@@ -153,6 +192,23 @@ def query_grounded_chat(
         )
 
     check_document_access(document_id, current_user, db, required_permission="view")
+
+    # 2. SaaS Document Question Cap Check (per-document allowance per billing cycle)
+    SubscriptionService.check_question_limit(db, current_user, document_id)
+
+    # 3. SaaS Credit Availability Check (15 credits per successful question)
+    question_cost = getattr(settings, "QUESTION_CREDIT_COST", 15)
+    if not (current_user.is_admin or current_user.role == "admin"):
+        if not CreditService.check_available_credits(db, current_user.id, question_cost):
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail={
+                    "error": "INSUFFICIENT_CREDITS",
+                    "message": f"Asking a question requires {question_cost} credits, but you do not have enough credits remaining. Please upgrade or renew your plan.",
+                    "required_credits": question_cost,
+                    "upgrade_available": True
+                }
+            )
 
     # Prompt Injection Sanitization
     untrusted_msg = chat_req.message.strip()
@@ -196,6 +252,25 @@ def query_grounded_chat(
         question=untrusted_msg,
         user_role=current_user.role
     )
+
+    # Debit credits and record usage ONLY on successful answer generation
+    if not (current_user.is_admin or current_user.role == "admin"):
+        CreditService.debit_credits(
+            db,
+            user_id=current_user.id,
+            amount=question_cost,
+            transaction_type="question_debit",
+            reason=f"Chatbot question on document: {untrusted_msg[:60]}",
+            document_id=document_id
+        )
+        SubscriptionService.record_usage(
+            db,
+            user_id=current_user.id,
+            operation_type="question",
+            credits_charged=question_cost,
+            document_id=document_id,
+            status="success"
+        )
 
     # Store user and assistant messages in session
     user_msg = ChatMessage(session_id=session.id, role="user", content=untrusted_msg)
