@@ -1,6 +1,6 @@
 # 🏛️ FinanceAgent: Enterprise Financial Intelligence & Multimodal Agentic RAG Platform
 
-> **Audit-Grade Financial Intelligence with Light Neo-Brutalism UI, Deterministic Agentic RAG with Exact Page Redirect Citations, Multimodal Hybrid Retrieval (BM25 Okapi + Dense Vector Space + RRF), NVIDIA NIM Grounded Synthesis, 3-Tier RBAC with Org-First Admin Governance, Live Chatbot Security Feed, In-Memory DuckDB Engine, and Cryptographic SHA-256 Integrity Hash Chains.**
+> **Audit-Grade Financial Intelligence with Light Neo-Brutalism UI, Deterministic Agentic RAG with Exact Page Redirect Citations, Multimodal Hybrid Retrieval (BM25 Okapi + Dense Vector Space + Cross-Encoder Reranking), Table-Aware Chunking, Query Period/Unit Normalization, LLM-as-a-Judge Evaluation Framework, 3-Tier RBAC with Org-First Admin Governance, In-Memory DuckDB Engine, and Cryptographic SHA-256 Integrity Hash Chains.**
 
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688.svg)](https://fastapi.tiangolo.com/)
@@ -8,7 +8,7 @@
 [![Vite 5](https://img.shields.io/badge/Bundler-Vite%205-646CFF.svg)](https://vitejs.dev/)
 [![DuckDB](https://img.shields.io/badge/Engine-DuckDB%20Vectorized-FFF000.svg)](https://duckdb.org/)
 [![NVIDIA NIM](https://img.shields.io/badge/LLM-NVIDIA%20NIM%20%2F%20Llama%203.2-76B900.svg)](https://build.nvidia.com/)
-[![Pytest](https://img.shields.io/badge/Tests-52%2F52%20Passing-brightgreen.svg)]()
+[![Pytest](https://img.shields.io/badge/Tests-86%2F86%20Passing-brightgreen.svg)]()
 [![Design](https://img.shields.io/badge/Design-Light%20Neo--Brutalism-FFE600.svg)]()
 [![Security](https://img.shields.io/badge/Security-SOC2--Aligned%20Practices-emerald.svg)]()
 
@@ -16,22 +16,24 @@
 
 ## 📌 The Problem: Why High-Stakes Finance Breaks Generic AI
 
-Corporate earnings filings (SEC Form 10-Q, 10-K, and International Annual Reports) are dense, 80 to 250+ page PDFs filled with consolidated tables, non-GAAP reconciliations, footnotes, and regulatory disclosures.
+Corporate earnings filings (SEC Form 10-Q, 10-K, and International Annual Reports) are dense, 80 to 250+ page PDFs filled with multi-column financial statements, non-GAAP reconciliations, footnotes, and regulatory disclosures.
 
 When equity research analysts, risk officers, or portfolio managers use generic AI chatbots, they face catastrophic failure modes:
 
 1. **Hallucination of Financial Figures**: Traditional LLMs frequently fabricate numbers, confuse "Operating Profit" with "Net Profit", or mix up prior-year quarters with current-period results.
-2. **Phantom Citations**: Naive chatbots cite page numbers that do not contain the reported figures, making audit verification impossible.
-3. **Context Truncation in 100–250+ Page Filings**: Critical primary financial statements (e.g., Consolidated Statement of Profit and Loss) are frequently buried on pages 150–200. Standard AI models truncate after the first 20 pages, missing the actual statements completely.
-4. **Restart Amnesia & Volatile State**: Typical RAG services keep in-memory indexes that disappear on process restart, making previously uploaded filings unsearchable.
-5. **Cross-Tenant Data Leakage**: Weak tenant isolation can accidentally query or cite documents uploaded by other corporate tenants.
-6. **Chatbot Fluff & Security Risks**: Unbounded chatbots provide lengthy, vague essays without role-based access control to prevent unauthorized junior staff or external viewers from extracting confidential disclosures.
+2. **Prior-Year & Unit Traps**: Queries asking for "prior year quarter" or figures in "Billions" stumble when naive embeddings retrieve current-period numbers reported in Millions without conversion.
+3. **Table Truncation**: Financial statements spanning dozens of rows get truncated or distorted when standard text splitters cut tables midway without preserving column headers or reporting units.
+4. **Phantom Citations**: Naive chatbots cite page numbers that do not contain the reported figures, making audit verification impossible.
+5. **Context Truncation in 100–250+ Page Filings**: Critical primary financial statements (e.g., Consolidated Statement of Profit and Loss) are frequently buried on pages 150–200. Standard AI models truncate after the first 20 pages.
+6. **Restart Amnesia & Volatile State**: Typical RAG services keep in-memory indexes that disappear on process restart, making previously uploaded filings unsearchable.
+7. **Simulated / Uncalibrated Evals**: Many AI benchmarks evaluate synthetic toys rather than real financial filings with ground-truth provenance.
+8. **Cross-Tenant Data Leakage**: Weak tenant isolation can query or cite documents uploaded by other corporate tenants.
 
 ---
 
 ## 💡 The Solution: Deterministic Multi-Agent & Multimodal Hybrid RAG Engine
 
-**FinanceAgent** solves this by establishing a **zero-trust deterministic boundary** around AI extraction and retrieval. Specialized agents extract candidates, but mathematical calculations, citation verifications, and conflict reconciliations happen **outside** the LLM in strict deterministic code.
+**FinanceAgent** solves this by establishing a **zero-trust deterministic boundary** around AI extraction and retrieval. Specialized agents extract candidates, but mathematical calculations, citation verifications, period/unit normalizations, and conflict reconciliations happen **outside** the LLM in strict deterministic code.
 
 ```mermaid
 flowchart TD
@@ -40,7 +42,7 @@ flowchart TD
         B -->|Admin Role| C[Admin & Governance Panel + Live Security Feed]
         B -->|Analyst Role| D[Analysis, DuckDB Console, RAG Chat & Visualizations]
         B -->|Viewer Role| E[Read-Only Document Repository]
-        B --> F[Organization Isolation: FinanceCorp Global]
+        B --> F[Organization Isolation: Multi-Tenant Partitioning]
     end
 
     subgraph INGESTION ["2. Ingestion & Security Validation Layer"]
@@ -49,30 +51,38 @@ flowchart TD
         I -->|No| J[Reject: Security Alert 400]
         I -->|Yes| K[Anti-Malware Active Script Scan]
         K -->|Clean| M[SHA-256 Integrity Hash & Chain]
-        M --> N[Extract Multimodal Pages with DocumentParser]
+        M --> N[Extract Multimodal Pages with PyMuPDF]
         N --> DB[(SQLite / PostgreSQL EvidenceRecords)]
     end
 
     subgraph RAG_CORE ["3. Multimodal Hybrid RAG & Verification Engine"]
-        N --> O[Semantic Chunking: Text, Tables, Charts]
-        O --> P[Lexical BM25 Okapi with Financial Synonyms]
-        O --> Q[Dense Vector Space Semantic Cosine Retrieval]
-        P & Q --> R[Reciprocal Rank Fusion RRF Reranking]
-        R --> S{Relevance Gate}
+        N --> O1[Table-Aware Chunking: Unit & Header Retention]
+        N --> O2[Text Sentence Slicing]
+        N --> O3[Visual / Chart Extraction]
+        O1 & O2 & O3 --> P[Lexical BM25 Okapi with Financial Synonyms]
+        O1 & O2 & O3 --> Q[Dense Vector Space Semantic Cosine Retrieval]
+        P & Q --> R[Reciprocal Rank Fusion RRF + Contextual Period Boost]
+        R --> RERANK[Cross-Encoder Neural Reranker: BGE-Reranker-Base]
+        RERANK --> S{Relevance Gate}
         S -- "Below Threshold" --> T[Deterministic Controlled Abstention]
         S -- "Pass" --> U[Candidate Citations with Exact BBox & Page]
         U --> V[Deterministic CitationValidator Outside LLM]
-        V --> W[NVIDIA NIM / Llama 3.2 Grounded Synthesis]
+        V --> W[NVIDIA NIM / Grounded Synthesis]
         W --> X[API Response with Exact Page Redirect Links]
     end
 
-    subgraph ANALYTICS ["4. Vectorized DuckDB Engine & Visualizations"]
+    subgraph EVAL ["4. LLM-as-a-Judge & Golden Evaluation Suite"]
+        X --> J1[FinancialLLMJudge: Factuality & Provenance]
+        J1 --> J2[Ablation Suite & Multi-Trap Golden Dataset]
+    end
+
+    subgraph ANALYTICS ["5. Vectorized DuckDB Engine & Visualizations"]
         N --> Y[In-Memory DuckDB Columnar Database]
         Y --> Z[Interactive SQL Query Console]
         Y --> AA[Recharts Visual Dashboards & Waterfall]
     end
 
-    subgraph UI ["5. Light Neo-Brutalism Responsive Workspace"]
+    subgraph UI ["6. Light Neo-Brutalism Responsive Workspace"]
         AA --> AB[Metrics Grid & High-Contrast Scorecards]
         X --> AC[RAG Chat + Source Verification PDF Inspector]
         C --> AD[Teammate Invites & Live Security Event Log]
@@ -84,24 +94,48 @@ flowchart TD
 
 ## ✨ Core Features & Technical Highlights
 
-### 🔍 1. Multimodal Hybrid RAG Engine
+### 🔍 1. Multimodal Hybrid Retrieval with Neural Reranking
 - **BM25 Okapi Lexical Search**: Full implementation ($k_1=1.5, b=0.75$) with Robertson-Spärck Jones IDF and domain-specific financial synonym expansion (`PAT`, `Revenue`, `Operating Cash Flow`, `EBITDA Margin`).
-- **Dense Vector Semantic Search**: Sublinear TF-IDF vector space modeling with cosine similarity over full passage corpora, running 100% offline with sub-millisecond latency.
-- **Reciprocal Rank Fusion (RRF)**: Merges lexical and dense rankings using $RRF = \frac{1}{60 + r_{\text{bm25}}} + \frac{1}{60 + r_{\text{dense}}}$.
+- **Dense Vector Semantic Search**: Dense embedding engine (`BAAI/bge-small-en-v1.5` or sublinear TF-IDF fallback) generating normalized dense vectors with cosine similarity scoring.
+- **Table-Aware Chunking**: Preserves full table records without row truncation. Injects column headers, table titles, and detected units (`USD Millions`, `INR Crores`, `%`) directly into every table chunk.
+- **Query Period & Unit Normalization**: `QueryNormalizer` detects prior-year traps (`prior year`, `FY2023`, `same period last year`) and unit conversions (`in Billions` vs reported `Millions`), applying contextual boosts during RRF scoring.
+- **Cross-Encoder Reranker**: Joint query-passage cross-attention (`BAAI/bge-reranker-base`) reranking top candidates from fusion before generation.
+- **Reciprocal Rank Fusion (RRF)**: Merges lexical and dense rankings using:
+  $$\text{RRF} = \frac{w_{\text{bm25}}}{k + r_{\text{bm25}}} + \frac{w_{\text{dense}}}{k + r_{\text{dense}}}$$
 - **Automatic Database Hydration**: On server restart or cache eviction, queries seamlessly reconstruct in-memory indexes directly from persistent `EvidenceRecord` tables in SQLite/PostgreSQL.
 - **Strict Tenant Isolation**: Eliminates cross-tenant data leaks by enforcing single-document authorization boundaries.
 - **Safe Abstention Gate**: Gracefully abstains when evidence is insufficient, preventing confident hallucinated answers.
 
-### 🧠 2. NVIDIA NIM Grounded Synthesis
-- Powered by NVIDIA NIM API endpoints using `meta/llama-3.2-11b-vision-instruct` (and `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning`).
+### 🧠 2. NVIDIA NIM Grounded Synthesis & Citation Validation
+- Powered by NVIDIA NIM API endpoints using `meta/llama-3.2-11b-vision-instruct` (or OpenAI compatible backends).
 - Injected with strict system directives treating document text strictly as passive data.
 - Built-in factual guard: If an external model answer omits or contradicts the verified numeric figure, the engine automatically falls back to the deterministic extracted ground truth.
+- **Deterministic CitationValidator**: Rejects fabricated quotes, mismatched page numbers, and invalid bounding boxes *outside* the LLM.
 
-### 📑 3. Source Verification PDF Inspector
+### ⚖️ 3. LLM-as-a-Judge & Evaluation Framework
+- **`FinancialLLMJudge`**: Evaluates model answers across Factuality, Completeness, Citation Provenance, and Hallucination Risk.
+- **Golden Evaluation Dataset**: Schema-validated dataset spanning 8 financial trap categories:
+  1. `numeric_lookup`
+  2. `table_based`
+  3. `multi_hop_yoy`
+  4. `prior_year_trap`
+  5. `unit_trap`
+  6. `unanswerable` (Controlled Abstention)
+  7. `prompt_injection`
+  8. `scanned_or_chart`
+- **Ablation Runner**: Automated scripts (`evals/run_eval.py`, `evals/run_ablation.py`) to systematically compare retrieval configs (Dense-only, BM25-only, Hybrid RRF, RRF + Reranker, Table-Aware Chunking).
+
+### 📑 4. Source Verification PDF Inspector
 - Badged source citations with physical page numbers, printed page labels (e.g. `Appendix-X`), content types (`text`, `table`, `chart`), and bounding box coordinates.
 - Click **"VERIFY SOURCE"** to open the interactive PDF viewer with page jump navigation (`#page=X`), rendered high-res page image, and text block highlights.
 
-### 🛡️ 4. Enterprise Security & RBAC Governance
+### 💳 5. Enterprise SaaS, Credits & Razorpay Billing
+- **Tiered Plans**: Basic (Free), Pro, Enterprise with monthly recurring credits.
+- **Atomic Credit Ledger**: Double-entry style credit debits for document uploads, question queries, and visual analysis.
+- **Document & Question Quotas**: Enforces active document limits and question caps per plan.
+- **Razorpay Sandbox Integration**: Payment order generation, signature verification (`HmacSHA256`), and webhook handlers.
+
+### 🛡️ 6. Enterprise Security & RBAC Governance
 - **3-Tier RBAC**: `admin`, `analyst`, and `viewer` roles.
 - **Google Workspace OAuth & Local Auth**: Supports corporate single sign-on with audit attribution.
 - **SHA-256 Cryptographic Hash Chain**: Verifies document immutability across uploads.
@@ -115,13 +149,15 @@ flowchart TD
 | Layer | Technologies |
 | :--- | :--- |
 | **Backend API** | Python 3.11+, FastAPI, SQLAlchemy, Pydantic V2 |
-| **AI / Retrieval** | BM25 Okapi, Scikit-learn (TF-IDF Vector Space), LangGraph, PyMuPDF (Fitz) |
+| **AI / Retrieval** | BM25 Okapi, BAAI BGE Reranker & Embeddings, Scikit-learn, PyMuPDF (Fitz) |
 | **LLM Provider** | NVIDIA NIM API (`meta/llama-3.2-11b-vision-instruct`), OpenAI compatible |
+| **Evaluation** | Custom LLM-as-a-Judge, Golden Benchmark Dataset, Automated Ablation Harness |
 | **Analytics Engine** | In-Memory DuckDB (Vectorized Columnar SQL) |
 | **Database** | SQLite (development) / Supabase PostgreSQL (production) |
+| **Payments & SaaS** | Razorpay Payment Gateway (Test/Live Sandbox), Credit Ledger System |
 | **Frontend** | React 18, Vite 5, TailwindCSS, Lucide Icons, Recharts |
 | **Design System** | Light Neo-Brutalism (high-contrast borders, pastel tags, tactile shadows) |
-| **Testing** | Pytest (52 automated regression and unit tests) |
+| **Testing** | Pytest (86 automated regression, unit, and end-to-end tests) |
 
 ---
 
@@ -137,8 +173,8 @@ flowchart TD
 ### 1. Clone & Setup Repository
 
 ```bash
-git clone https://github.com/<your-username>/FinanceAgent.git
-cd FinanceAgent/Finance-agent
+git clone https://github.com/Rudranarayan666/Finance-agent.git
+cd Finance-agent
 ```
 
 ---
@@ -166,20 +202,32 @@ ACCESS_TOKEN_EXPIRE_MINUTES=1440
 # Database
 DATABASE_URL="sqlite:///./finance_agent.db"
 
-# LLM Providers
+# LLM Providers (NVIDIA NIM or OpenAI)
 NVIDIA_API_KEY="your_nvidia_nim_api_key_here"
 NVIDIA_BASE_URL="https://integrate.api.nvidia.com/v1"
 NVIDIA_MODEL="meta/llama-3.2-11b-vision-instruct"
 
-# Optional LLMs
-OPENAI_API_KEY=""
-GROQ_API_KEY=""
+# Vector DB & Retrieval Improvements
+USE_REAL_DENSE_RETRIEVER=False
+DENSE_EMBEDDING_BACKEND="local"
+DENSE_MODEL_NAME="BAAI/bge-small-en-v1.5"
+USE_CROSS_ENCODER_RERANKER=False
+RERANKER_MODEL_NAME="BAAI/bge-reranker-base"
+RERANKER_TOP_N=4
+USE_TABLE_AWARE_CHUNKING=True
+USE_PERIOD_UNIT_AWARENESS=True
+ENABLE_LLM_GROUNDED_SYNTHESIS=False
 
-# Storage & Vector DB
-UPLOAD_DIR="./uploads"
-CHROMA_PERSIST_DIR="./chroma_db"
-MAX_UPLOAD_SIZE_MB=50
-DATA_RETENTION_DAYS=30
+# LLM-as-Judge & Evaluation
+USE_LLM_JUDGE=False
+JUDGE_BACKEND="local"
+JUDGE_MODEL="meta/llama-3.1-70b-instruct"
+
+# SaaS & Payments (Razorpay Sandbox)
+PAYMENT_TEST_MODE=True
+RAZORPAY_KEY_ID="rzp_test_YourKeyId"
+RAZORPAY_KEY_SECRET="YourKeySecret"
+RAZORPAY_WEBHOOK_SECRET="YourWebhookSecret"
 ```
 
 > 🔒 **Security Notice**: `.env` and all credential files are explicitly excluded from Git version control via `.gitignore`. Never commit API keys or passwords.
@@ -199,7 +247,7 @@ DATA_RETENTION_DAYS=30
 
 2. **Install dependencies**:
    ```bash
-   pip install -r requirements.txt
+   pip install -r backend/requirements.txt
    ```
 
 3. **Start the FastAPI backend**:
@@ -234,13 +282,23 @@ Open a separate terminal:
 
 ---
 
+### 5. Running with Docker Compose
+
+To launch the full stack (backend, frontend, database) with Docker:
+
+```bash
+docker-compose up --build
+```
+
+---
+
 ## 👥 Auto-Seeded User Presets & RBAC
 
 The database automatically seeds an enterprise tenant (**FinanceCorp Global**) with three role presets:
 
 | Role | Email | Password | Permissions | Default View |
 | :--- | :--- | :--- | :--- | :--- |
-| **Admin** | `admin@finance.corp` | `AdminPass123!` | Full control, Teammate Invites, Live Security Feed, Document Manager | Admin Governance Panel |
+| **Admin** | `admin@finance.corp` | `AdminPass123!` | Full control, Teammate Invites, Live Security Feed, Document Manager, Billing | Admin Governance Panel |
 | **Analyst** | `analyst@finance.corp` | `AnalystPass123!` | Multi-Agent Analysis, DuckDB SQL Console, Visualizations, RAG Chat | Financial Analysis |
 | **Viewer** | `viewer@finance.corp` | `ViewerPass123!` | Read-only viewing and certificate downloads (AI Chat queries restricted) | Document Repository |
 
@@ -248,38 +306,66 @@ The database automatically seeds an enterprise tenant (**FinanceCorp Global**) w
 
 ---
 
-## 🧪 Automated Testing Suite (52/52 Passing - 100%)
+## 🧪 Automated Testing Suite (86/86 Passing - 100%)
 
 Run the complete test suite:
 
 ```bash
-python -m pytest
+# On Windows PowerShell:
+$env:PYTHONPATH="." ; python -m pytest
+
+# On Linux / macOS:
+PYTHONPATH=. pytest
 ```
 
 ### Test Coverage Highlights
 
 ```text
-tests\test_arithmetic.py ....                                            [  7%]
-tests\test_citation_validator.py ......                                  [ 19%]
-tests\test_database.py .                                                 [ 21%]
-tests\test_document_formats.py ...                                       [ 26%]
-tests\test_e2e_pipeline.py .                                             [ 28%]
-tests\test_financial_accuracy.py ....                                    [ 36%]
-tests\test_grounding.py ....                                             [ 44%]
-tests\test_hybrid_retrieval.py ...                                       [ 50%]
-tests\test_multimodal_ingestion.py ....                                  [ 57%]
-tests\test_rag_and_chat.py ..                                            [ 61%]
-tests\test_rag_pipeline_regression.py ..........                         [ 80%]
-tests\test_rbac.py .......                                               [ 94%]
-tests\test_reconciliation.py ...                                         [100%]
-================= 52 passed, 41 warnings in 142.42s =================
+tests\test_arithmetic.py ....                                            [  4%]
+tests\test_citation_validator.py ......                                  [ 11%]
+tests\test_database.py .                                                 [ 12%]
+tests\test_document_formats.py ...                                       [ 16%]
+tests\test_e2e_pipeline.py .                                             [ 17%]
+tests\test_eval_metrics.py .........                                     [ 27%]
+tests\test_financial_accuracy.py ....                                    [ 32%]
+tests\test_grounding.py ....                                             [ 37%]
+tests\test_hybrid_retrieval.py ...                                       [ 40%]
+tests\test_llm_judge.py .....                                            [ 46%]
+tests\test_multimodal_ingestion.py ....                                  [ 51%]
+tests\test_rag_and_chat.py ..                                            [ 53%]
+tests\test_rag_pipeline_regression.py ..........                         [ 65%]
+tests\test_rbac.py .......                                               [ 73%]
+tests\test_reconciliation.py ...                                         [ 76%]
+tests\test_retrieval_improvements.py ....                                [ 81%]
+tests\test_saas_platform.py .........                                    [100%]
+================= 86 passed, 171 warnings in 94.78s =================
 ```
 
 Key test suites:
-- **`test_rag_pipeline_regression.py`**: Verifies known revenue retrieval, financial synonym expansion (PAT), multi-page boundary retrieval, safe abstention, empty PDF guards, metadata preservation, citation validation, DB restart hydration, tenant isolation, and arithmetic edge cases.
+- **`test_retrieval_improvements.py`**: Verifies TableAwareChunker header retention, unit detection, non-truncation across 25+ rows, QueryNormalizer period/unit intent detection and contextual boosting, and DenseRetriever offline fallback.
+- **`test_llm_judge.py`**: Validates `FinancialLLMJudge` factuality, completeness, citation provenance metrics, and hallucination scoring.
+- **`test_eval_metrics.py`**: Validates numeric precision scoring, IoU page citation calculation, and abstention compliance.
+- **`test_saas_platform.py`**: Tests credit debit ledger atomicity, subscription plan tier selection, active document limit enforcement, and Razorpay signature verification.
+- **`test_rag_pipeline_regression.py`**: Verifies revenue retrieval, financial synonym expansion (PAT), multi-page boundary retrieval, safe abstention, empty PDF guards, citation validation, DB restart hydration, and tenant isolation.
 - **`test_hybrid_retrieval.py`**: Validates BM25 lexical ranking, dense vector scoring, structured table retrieval, and visual chart retrieval.
 - **`test_citation_validator.py`**: Asserts deterministic rejection of fabricated quotes, out-of-bounds page indices, and cross-document references.
 - **`test_rbac.py`**: Tests tenant isolation, password hashing, JWT expiration, and malware scanner protections.
+
+---
+
+## 📊 Evaluation & Ablation Harness
+
+Run the evaluation benchmark on the golden dataset:
+
+```bash
+# Run full evaluation across test set
+python evals/run_eval.py --split test
+
+# Run retrieval configuration ablation study
+python evals/run_ablation.py
+```
+
+Results are stored in `evals/results/` for audit tracking and ablation comparisons.
 
 ---
 

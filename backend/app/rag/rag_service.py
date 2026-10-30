@@ -17,6 +17,10 @@ from backend.app.engine.arithmetic import (
     normalize_fiscal_period
 )
 from backend.app.config import settings
+from backend.app.rag.table_chunker import TableAwareChunker
+from backend.app.rag.query_normalizer import QueryNormalizer
+from backend.app.rag.dense import DenseRetriever
+from backend.app.rag.reranker import CrossEncoderReranker, reranker
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +71,7 @@ class AgenticRAGService:
         self.doc_tfidf_vectorizers: Dict[str, TfidfVectorizer] = {}
         self.doc_tfidf_matrices: Dict[str, Any] = {}
         self.doc_bm25_stats: Dict[str, Dict[str, Any]] = {}
+        self.doc_dense_retrievers: Dict[str, Any] = {}
 
     def clear_document_index(self, document_id: str):
         """
@@ -82,6 +87,7 @@ class AgenticRAGService:
         self.doc_tfidf_vectorizers.pop(document_id, None)
         self.doc_tfidf_matrices.pop(document_id, None)
         self.doc_bm25_stats.pop(document_id, None)
+        self.doc_dense_retrievers.pop(document_id, None)
 
     def delete_document_index(self, document_id: str):
         self.clear_document_index(document_id)
@@ -198,35 +204,48 @@ class AgenticRAGService:
             # 2. Structured Tables
             for t in p.get("tables", []):
                 all_tables.append(t)
-                tbl_title = t.get("title", "Financial Statement Table")
-                headers = t.get("headers", [])
-                rows = t.get("rows", [])
-                bbox = t.get("bbox")
+                if getattr(settings, "USE_TABLE_AWARE_CHUNKING", False):
+                    tbl_chunks = TableAwareChunker.chunk_table(
+                        table_dict=t,
+                        document_id=document_id,
+                        document_version=document_version,
+                        page_num=page_num,
+                        physical_page_idx=page_idx,
+                        printed_page_label=printed_label,
+                        rows_per_chunk=8
+                    )
+                    for tc in tbl_chunks:
+                        passages.append(tc)
+                else:
+                    tbl_title = t.get("title", "Financial Statement Table")
+                    headers = t.get("headers", [])
+                    rows = t.get("rows", [])
+                    bbox = t.get("bbox")
 
-                table_lines = [f"Table: {tbl_title} (Page {page_num})", " | ".join(headers)]
-                for r in rows[:15]:
-                    table_lines.append(" | ".join(r))
-                table_repr = "\n".join(table_lines)
-                tbl_words = re.findall(r'\b[a-zA-Z0-9$%₹.,-]+\b', table_repr.lower())
+                    table_lines = [f"Table: {tbl_title} (Page {page_num})", " | ".join(headers)]
+                    for r in rows[:15]:
+                        table_lines.append(" | ".join(r))
+                    table_repr = "\n".join(table_lines)
+                    tbl_words = re.findall(r'\b[a-zA-Z0-9$%₹.,-]+\b', table_repr.lower())
 
-                passages.append({
-                    "chunk_id": f"{document_id}_p{page_num}_tbl_{t.get('table_id', '0')}",
-                    "evidence_id": f"ev_{document_id}_p{page_num}_tbl_{t.get('table_id', '0')}",
-                    "doc_id": document_id,
-                    "document_version": document_version,
-                    "page": page_num,
-                    "physical_page_index": page_idx,
-                    "physical_page_number": page_num,
-                    "printed_page_label": printed_label,
-                    "content_type": "table",
-                    "text": table_repr,
-                    "words_set": set(tbl_words),
-                    "raw_lower": table_repr.lower(),
-                    "has_numbers": True,
-                    "has_financial_symbols": True,
-                    "region": bbox,
-                    "table_data": t
-                })
+                    passages.append({
+                        "chunk_id": f"{document_id}_p{page_num}_tbl_{t.get('table_id', '0')}",
+                        "evidence_id": f"ev_{document_id}_p{page_num}_tbl_{t.get('table_id', '0')}",
+                        "doc_id": document_id,
+                        "document_version": document_version,
+                        "page": page_num,
+                        "physical_page_index": page_idx,
+                        "physical_page_number": page_num,
+                        "printed_page_label": printed_label,
+                        "content_type": "table",
+                        "text": table_repr,
+                        "words_set": set(tbl_words),
+                        "raw_lower": table_repr.lower(),
+                        "has_numbers": True,
+                        "has_financial_symbols": True,
+                        "region": bbox,
+                        "table_data": t
+                    })
 
             # 3. Visual & Chart Regions
             for v in p.get("visual_regions", []):
@@ -260,7 +279,7 @@ class AgenticRAGService:
         self.doc_tables[document_id] = all_tables
         self.doc_visuals[document_id] = all_visuals
 
-        # Precompute BM25 statistics
+        # Precompute BM25 statistics & Dense index
         if passages:
             self.doc_bm25_stats[document_id] = self._build_bm25_stats(passages)
             try:
@@ -271,6 +290,14 @@ class AgenticRAGService:
                 self.doc_tfidf_matrices[document_id] = matrix
             except Exception as ex:
                 logger.debug(f"TF-IDF vectorizer fit note: {ex}")
+
+            if getattr(settings, "USE_REAL_DENSE_RETRIEVER", False):
+                try:
+                    retriever = DenseRetriever(document_id)
+                    retriever.index_passages(passages)
+                    self.doc_dense_retrievers[document_id] = retriever
+                except Exception as ex:
+                    logger.warning(f"Dense retriever indexing error: {ex}")
 
     def _build_bm25_stats(self, passages: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Precomputes BM25 Okapi corpus statistics."""
@@ -335,7 +362,13 @@ class AgenticRAGService:
         return scores
 
     def _score_dense(self, query_text: str, document_id: str) -> List[float]:
-        """Computes dense vector cosine similarity using the document vectorizer."""
+        """Computes dense vector similarity using DenseRetriever or TF-IDF vectorizer fallback."""
+        if getattr(settings, "USE_REAL_DENSE_RETRIEVER", False) and document_id in self.doc_dense_retrievers:
+            try:
+                return self.doc_dense_retrievers[document_id].score_query(query_text)
+            except Exception as e:
+                logger.warning(f"Dense retriever query error: {e}")
+
         vec = self.doc_tfidf_vectorizers.get(document_id)
         matrix = self.doc_tfidf_matrices.get(document_id)
         passages = self.doc_passages.get(document_id, [])
@@ -426,6 +459,8 @@ class AgenticRAGService:
             del self.doc_tfidf_matrices[document_id]
         if document_id in self.doc_bm25_stats:
             del self.doc_bm25_stats[document_id]
+        if document_id in self.doc_dense_retrievers:
+            del self.doc_dense_retrievers[document_id]
 
     def _extract_concise_answer(self, question: str, best_passage: Dict[str, Any]) -> str:
         """
@@ -543,6 +578,14 @@ class AgenticRAGService:
         bm25_rank_map = {idx: rank for rank, idx in enumerate(bm25_ranks)}
         dense_rank_map = {idx: rank for rank, idx in enumerate(dense_ranks)}
 
+        rrf_k = float(getattr(settings, "RRF_K", 60.0))
+        bm25_w = float(getattr(settings, "RRF_BM25_WEIGHT", 1.0))
+        dense_w = float(getattr(settings, "RRF_DENSE_WEIGHT", 1.0))
+
+        query_intent = None
+        if getattr(settings, "USE_PERIOD_UNIT_AWARENESS", False):
+            query_intent = QueryNormalizer.analyze_query(question)
+
         scored_passages = []
         is_visual_query = any(w in q_lower for w in ["chart", "graph", "figure", "visual", "image", "diagram"])
         is_table_query = any(w in q_lower for w in ["table", "statement", "schedule", "breakdown", "maturity"])
@@ -550,7 +593,7 @@ class AgenticRAGService:
         for i, p in enumerate(passages):
             bm25_r = bm25_rank_map.get(i, N)
             dense_r = dense_rank_map.get(i, N)
-            rrf = 1.0 / (60.0 + bm25_r + 1) + 1.0 / (60.0 + dense_r + 1)
+            rrf = (bm25_w / (rrf_k + bm25_r + 1)) + (dense_w / (rrf_k + dense_r + 1))
 
             # Heuristic domain boosts
             raw_boost = 0.0
@@ -573,6 +616,10 @@ class AgenticRAGService:
                     raw_boost += 1.5
                 if p["has_numbers"]:
                     raw_boost += 1.0
+
+            # Period & Unit Contextual Boost
+            if query_intent:
+                raw_boost += QueryNormalizer.compute_contextual_boost(p, query_intent)
 
             # Content type relevance boost
             if is_visual_query and p.get("content_type") in ["chart", "image"]:
@@ -609,7 +656,19 @@ class AgenticRAGService:
 
         # Stage 3: Reranking & Top Candidates Selection
         scored_passages.sort(key=lambda x: (x[0], x[1]), reverse=True)
-        top_ranked = scored_passages[:4]
+        if getattr(settings, "USE_CROSS_ENCODER_RERANKER", False):
+            candidate_pool = [p for _, _, p in scored_passages[:12]]
+            reranked_pool = reranker.rerank(
+                query=question,
+                candidates=candidate_pool,
+                top_n=getattr(settings, "RERANKER_TOP_N", 4)
+            )
+            top_ranked = []
+            for rank_idx, p in enumerate(reranked_pool):
+                synth_score = 30.0 - (rank_idx * 2.0)
+                top_ranked.append((synth_score, synth_score, p))
+        else:
+            top_ranked = scored_passages[:4]
 
         # Stage 4: Candidate Citations
         candidate_citations = []
@@ -655,20 +714,21 @@ class AgenticRAGService:
 
         # Attempt LLM generation if configured
         final_answer = concise_answer
-        try:
-            from backend.app.core.llm import LLMService
-            llm_candidates = [p for _, _, p in top_ranked]
-            llm_answer = LLMService.generate_grounded_answer(question, llm_candidates, document_id=document_id)
-            if llm_answer and len(llm_answer.strip()) > 5:
-                # If LLM produces an answer, ensure it does not contradict or omit verified passage facts
-                extracted_num = re.search(r'[\$₹]?[0-9,.]+\s*(?:Million|Billion|Crores|Cr|%|thousand)?', concise_answer, re.I)
-                target_str = extracted_num.group(0) if extracted_num else ""
-                if target_str and target_str.lower() in llm_answer.lower():
-                    final_answer = f"{concise_answer} — {llm_answer}"
-                else:
-                    final_answer = concise_answer
-        except Exception as e:
-            logger.debug(f"LLM grounded generation note: {e}")
+        if getattr(settings, "ENABLE_LLM_GROUNDED_SYNTHESIS", False):
+            try:
+                from backend.app.core.llm import LLMService
+                llm_candidates = [p for _, _, p in top_ranked]
+                llm_answer = LLMService.generate_grounded_answer(question, llm_candidates, document_id=document_id)
+                if llm_answer and len(llm_answer.strip()) > 5:
+                    # If LLM produces an answer, ensure it does not contradict or omit verified passage facts
+                    extracted_num = re.search(r'[\$₹]?[0-9,.]+\s*(?:Million|Billion|Crores|Cr|%|thousand)?', concise_answer, re.I)
+                    target_str = extracted_num.group(0) if extracted_num else ""
+                    if target_str and target_str.lower() in llm_answer.lower():
+                        final_answer = f"{concise_answer} — {llm_answer}"
+                    else:
+                        final_answer = concise_answer
+            except Exception as e:
+                logger.debug(f"LLM grounded generation note: {e}")
 
         # Attach retrieval diagnostics
         verification_report["diagnostics"] = {

@@ -53,7 +53,7 @@ def test_prompt_injection_defense():
         db.add(org)
         db.commit()
 
-        user = User(email=f"user_{uuid.uuid4().hex[:6]}@test.corp", hashed_password="pw", full_name="User", organization_id=org.id)
+        user = User(email=f"user_{uuid.uuid4().hex[:6]}@test.corp", hashed_password="pw", full_name="User", organization_id=org.id, is_admin=True, role="admin")
         db.add(user)
         db.commit()
 

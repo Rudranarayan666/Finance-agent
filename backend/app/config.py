@@ -41,8 +41,26 @@ class Settings(BaseSettings):
     # Rate Limiting
     MAX_UPLOADS_PER_HOUR: int = 20
     
-    # Vector DB
+    # Vector DB & Retrieval Architecture Flags (Ablations)
     CHROMA_PERSIST_DIR: str = "./chroma_db"
+    USE_REAL_DENSE_RETRIEVER: bool = False
+    DENSE_EMBEDDING_BACKEND: str = "local"  # local or nvidia
+    DENSE_MODEL_NAME: str = "BAAI/bge-small-en-v1.5"
+    USE_CROSS_ENCODER_RERANKER: bool = False
+    RERANKER_MODEL_NAME: str = "BAAI/bge-reranker-base"
+    RERANKER_TOP_N: int = 4
+    USE_TABLE_AWARE_CHUNKING: bool = False
+    USE_PERIOD_UNIT_AWARENESS: bool = False
+    RRF_K: float = 60.0
+    RRF_BM25_WEIGHT: float = 1.0
+    ENABLE_LLM_GROUNDED_SYNTHESIS: bool = False
+
+    # Phase 3: LLM Judge & Automated Eval Flags
+    USE_LLM_JUDGE: bool = False
+    JUDGE_BACKEND: str = "local"  # local, nvidia, openai
+    JUDGE_MODEL: str = "meta/llama-3.1-70b-instruct"
+    JUDGE_TEMPERATURE: float = 0.0
+    JUDGE_PASS_THRESHOLD: float = 0.70
 
     # Admin Bootstrap (read from env, development defaults)
     ADMIN_EMAIL: str = "admin@gmail.com"

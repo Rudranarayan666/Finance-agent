@@ -1,0 +1,257 @@
+{
+  "summary": {
+    "total_queries": 5,
+    "retrieval": {
+      "recall_at_1": 0.5,
+      "recall_at_3": 0.8,
+      "recall_at_5": 0.8,
+      "recall_at_5_ci95": [
+        0.0,
+        0.0
+      ],
+      "recall_at_10": 0.8,
+      "mrr": 0.7,
+      "ndcg_at_5": 1.1399
+    },
+    "answer": {
+      "accuracy": 0.0,
+      "accuracy_ci95": [
+        0.0,
+        0.0
+      ],
+      "hallucination_rate": 1.0
+    },
+    "citations": {
+      "precision": 0.5667,
+      "recall": 0.8,
+      "all_citations_valid_rate": 0.4
+    },
+    "abstention": {
+      "abstention_precision": 0.0,
+      "abstention_recall": 0.0,
+      "abstention_f1": 0.0,
+      "false_abstain_rate": 0.0,
+      "unanswerable_count": 0,
+      "answerable_count": 5
+    },
+    "latency": {
+      "p50_ms": 1176.55,
+      "p95_ms": 2813.93,
+      "mean_ms": 1370.69
+    },
+    "category_breakdown": {
+      "multi_hop_yoy": {
+        "count": 5,
+        "accuracy": 0.0,
+        "recall_at_5": 0.8
+      }
+    },
+    "config": "baseline_hybrid",
+    "split": "dev",
+    "only_verified": false,
+    "timestamp": "20261030_173556"
+  },
+  "records": [
+    {
+      "id": "gold_001",
+      "doc_id": "NYSE_CRM_2024.pdf",
+      "category": "multi_hop_yoy",
+      "split": "dev",
+      "status": "unverified",
+      "difficulty": "hard",
+      "question": "By how many millions did subscription and support revenue increase between fiscal 2023 and fiscal 2024?",
+      "answerable": true,
+      "expected_value": 3516.0,
+      "expected_text": "3,516",
+      "gold_pages": [
+        66
+      ],
+      "retrieved_pages": [
+        66,
+        66,
+        68
+      ],
+      "cited_pages": [
+        66,
+        66,
+        68
+      ],
+      "answer": "Page 66: Results of Operations The following tables set forth selected data for each of the periods indicated (in millions): Fiscal Year Ended January 31, 2024 % of Total Revenues 2023 % of Total Revenues 2022 % of Total Revenues Revenues: Subscription and support .",
+      "actual_value": 6631202420232022.0,
+      "abstained": false,
+      "is_correct": false,
+      "is_hallucination": true,
+      "latency_ms": 3172.43,
+      "recall_at_1": 1.0,
+      "recall_at_3": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_5": 1.6309297535714575,
+      "citation_precision": 0.5,
+      "citation_recall": 1.0,
+      "all_citations_valid": 0.0
+    },
+    {
+      "id": "gold_002",
+      "doc_id": "sample_q3_fy26.pdf",
+      "category": "multi_hop_yoy",
+      "split": "dev",
+      "status": "unverified",
+      "difficulty": "hard",
+      "question": "What was the net profit margin % in Q3 FY2026 based on revenue of $94,930M and net income of $14,736M?",
+      "answerable": true,
+      "expected_value": 15.52,
+      "expected_text": "15.52%",
+      "gold_pages": [
+        1
+      ],
+      "retrieved_pages": [
+        1,
+        1,
+        1
+      ],
+      "cited_pages": [
+        1,
+        1,
+        1
+      ],
+      "answer": "Page 1: today announced financial results for its thir Third Quarter FY2026 Financial Highlights: \u00b7 Total revenue was $94,930 million, an increase of 6% year-over-year compared to $89,498 million in the prior y \u00b7 Gross profit for the period was $43,879 million, representing a strong operating gross margin.",
+      "actual_value": 1.2026949306894985e+20,
+      "abstained": false,
+      "is_correct": false,
+      "is_hallucination": true,
+      "latency_ms": 1176.55,
+      "recall_at_1": 1.0,
+      "recall_at_3": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_5": 2.1309297535714578,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "all_citations_valid": 1.0
+    },
+    {
+      "id": "gold_003",
+      "doc_id": "sample_q3_fy26.pdf",
+      "category": "multi_hop_yoy",
+      "split": "dev",
+      "status": "unverified",
+      "difficulty": "hard",
+      "question": "What is the expected sequential increase in revenue from Q3 FY26 ($94,930M) to the midpoint of Q4 FY26 guidance ($100,000M)?",
+      "answerable": true,
+      "expected_value": 5070.0,
+      "expected_text": "$5,070 million",
+      "gold_pages": [
+        1,
+        2
+      ],
+      "retrieved_pages": [
+        1,
+        1,
+        2
+      ],
+      "cited_pages": [
+        1,
+        1,
+        2
+      ],
+      "answer": "Page 1: today announced financial results for its thir Third Quarter FY2026 Financial Highlights: \u00b7 Total revenue was $94,930 million, an increase of 6% year-over-year compared to $89,498 million in the prior y \u00b7 Gross profit for the period was $43,879 million, representing a strong operating gross margin.",
+      "actual_value": 1.2026949306894985e+20,
+      "abstained": false,
+      "is_correct": false,
+      "is_hallucination": true,
+      "latency_ms": 1379.94,
+      "recall_at_1": 0.5,
+      "recall_at_3": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_5": 1.3065735963827294,
+      "citation_precision": 1.0,
+      "citation_recall": 1.0,
+      "all_citations_valid": 1.0
+    },
+    {
+      "id": "gold_004",
+      "doc_id": "NYSE_CRM_2024.pdf",
+      "category": "multi_hop_yoy",
+      "split": "dev",
+      "status": "unverified",
+      "difficulty": "hard",
+      "question": "What was the change in cash, cash equivalents and marketable securities from Jan 31, 2023 ($12,508M) to Jan 31, 2024 ($14,194M)?",
+      "answerable": true,
+      "expected_value": 1686.0,
+      "expected_text": "1,686",
+      "gold_pages": [
+        67
+      ],
+      "retrieved_pages": [
+        76,
+        67,
+        75
+      ],
+      "cited_pages": [
+        76,
+        67,
+        75
+      ],
+      "answer": "Page 76: At January 31, 2023, we had cash, cash equivalents and marketable securities totaling $12.5 billion. Fluctuations in the value of our investment securities caused by a change in interest rates (gains or losses on the carrying value) are recorded in other comprehensive income, net, and are realized only if we sell the underlying securities.",
+      "actual_value": null,
+      "abstained": false,
+      "is_correct": false,
+      "is_hallucination": true,
+      "latency_ms": 613.92,
+      "recall_at_1": 0.0,
+      "recall_at_3": 1.0,
+      "recall_at_5": 1.0,
+      "recall_at_10": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_5": 0.6309297535714575,
+      "citation_precision": 0.3333,
+      "citation_recall": 1.0,
+      "all_citations_valid": 0.0
+    },
+    {
+      "id": "gold_005",
+      "doc_id": "NYSE_CRM_2024.pdf",
+      "category": "multi_hop_yoy",
+      "split": "dev",
+      "status": "unverified",
+      "difficulty": "hard",
+      "question": "By how much did Salesforce's total revenues grow from fiscal 2023 ($31,352M) to fiscal 2024 ($34,857M)?",
+      "answerable": true,
+      "expected_value": 3505.0,
+      "expected_text": "3,505",
+      "gold_pages": [
+        66
+      ],
+      "retrieved_pages": [
+        67,
+        68,
+        69
+      ],
+      "cited_pages": [
+        67,
+        68,
+        69
+      ],
+      "answer": "Page 67: Fiscal Year Ended January 31, 2024 % of Total Revenues 2023 % of Total Revenues 2022 % of Total Revenues Cost of revenues .",
+      "actual_value": 6731202420232022.0,
+      "abstained": false,
+      "is_correct": false,
+      "is_hallucination": true,
+      "latency_ms": 510.62,
+      "recall_at_1": 0.0,
+      "recall_at_3": 0.0,
+      "recall_at_5": 0.0,
+      "recall_at_10": 0.0,
+      "mrr": 0.0,
+      "ndcg_at_5": 0.0,
+      "citation_precision": 0.0,
+      "citation_recall": 0.0,
+      "all_citations_valid": 0.0
+    }
+  ]
+}

@@ -168,6 +168,21 @@ async def attach_pdf_in_chat(
     }
 
 
+def is_prompt_injection(message: str) -> bool:
+    """Detects prompt injection and system override attempts."""
+    forbidden = [
+        "ignore previous instructions",
+        "reveal system prompt",
+        "call a tool",
+        "access another document",
+        "system prompt",
+        "drop table",
+        "override directives"
+    ]
+    msg_l = message.lower()
+    return any(t in msg_l for t in forbidden)
+
+
 @router.post("/{document_id}", response_model=ChatResponse)
 def query_grounded_chat(
     document_id: str,
@@ -212,21 +227,19 @@ def query_grounded_chat(
 
     # Prompt Injection Sanitization
     untrusted_msg = chat_req.message.strip()
-    forbidden_injection_terms = ["ignore previous instructions", "reveal system prompt", "call a tool", "access another document"]
-    for term in forbidden_injection_terms:
-        if term in untrusted_msg.lower():
-            log_audit_event(
-                db, action="prompt_injection_blocked", user=current_user, document_id=document_id, request=request,
-                details={"attempted_input": untrusted_msg[:100], "provider": current_user.provider or "local"}
-            )
-            return ChatResponse(
-                session_id=chat_req.session_id or "blocked",
-                answer="Security Warning: Prompt injection pattern detected and blocked. The system will answer questions strictly scoped to financial disclosures within this document.",
-                citations=[],
-                grounded=False,
-                confidence=0.0,
-                timestamp=datetime.utcnow().isoformat()
-            )
+    if is_prompt_injection(untrusted_msg):
+        log_audit_event(
+            db, action="prompt_injection_blocked", user=current_user, document_id=document_id, request=request,
+            details={"attempted_input": untrusted_msg[:100], "provider": current_user.provider or "local"}
+        )
+        return ChatResponse(
+            session_id=chat_req.session_id or "blocked",
+            answer="Security Warning: Prompt injection pattern detected and blocked. The system will answer questions strictly scoped to financial disclosures within this document.",
+            citations=[],
+            grounded=False,
+            confidence=0.0,
+            timestamp=datetime.utcnow().isoformat()
+        )
 
     # Get or create chat session
     session = None
